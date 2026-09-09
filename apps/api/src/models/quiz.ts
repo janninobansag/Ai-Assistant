@@ -9,7 +9,15 @@ const quizSchema = new Schema(
     questionCount: { type: Number, required: true },
     sourceContentHash: { type: String, required: true },
     promptVersion: { type: String, required: true },
-    questions: [{ prompt: String, options: [String], correctIndex: Number, explanation: String }]
+    questions: [
+      {
+        prompt: { type: String, required: true },
+        options: [{ type: String, required: true }],
+        correctIndex: { type: Number, required: true, min: 0, max: 3 },
+        explanation: { type: String, required: true },
+        concept: { type: String, required: true }
+      }
+    ]
   },
   { timestamps: true }
 );

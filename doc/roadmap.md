@@ -69,22 +69,23 @@ Status: **In progress**. Summary generation, validation, caching, and the initia
 
 ## Phase 3 — Quiz generation and practice
 
-Status: **In progress**. Strict quiz generation, validation, caching, and answer-sanitized quiz responses are implemented; attempts, scoring, and practice history remain.
+Status: **Complete**. Quiz generation, answer-key protection, persisted autosave/resume, idempotent scoring, result analysis, incorrect-question retry, and practice history are implemented.
 
 ### Deliverables
 
 - [x] Strict quiz generation and validation.
 - [x] Sanitized quiz serializers that hide answers.
-- [ ] Start, autosave, resume, submit, score, and retry flows.
-- [ ] Quiz result analysis and weak-concept list.
-- [ ] Practice history screen.
+- [x] Start, autosave, resume, submit, and score flows.
+- [x] Basic mobile quiz practice screen.
+- [x] Quiz result analysis and weak-concept list.
+- [x] Practice history screen.
 
 ### Exit criteria
 
-- [ ] Correct answers cannot be obtained from pre-submission API responses.
-- [ ] Submission is idempotent and cannot consume quota twice.
-- [ ] Refreshing or closing the app does not lose a saved in-progress attempt.
-- [ ] Scoring tests cover blank, partial, complete, and repeated submissions.
+- [x] Correct answers cannot be obtained from pre-submission API responses.
+- [x] Submission is idempotent and cannot consume quota twice.
+- [x] Refreshing or closing the app does not lose a saved in-progress attempt.
+- [x] Scoring tests cover blank, partial, complete, and repeated submissions.
 
 ## Phase 4 — Grounded tutor chat
 
@@ -131,7 +132,7 @@ Status: **In progress**. Strict quiz generation, validation, caching, and answer
 - [ ] Text normalization and chunk boundaries.
 - [ ] Quota point calculation and reset dates.
 - [ ] AI structured-output parsers.
-- [ ] Quiz scoring and weak-concept calculation.
+- [x] Quiz scoring and weak-concept calculation.
 - [ ] Authorization query builders and response serializers.
 
 ### API integration tests

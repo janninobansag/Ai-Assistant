@@ -12,6 +12,33 @@ type Summary = {
   definitions: Array<{ term: string; meaning: string }>;
   rememberThis: string[];
 };
+type QuizQuestion = { id: string; prompt: string; options: string[] };
+type Quiz = { id: string; title: string; questions: QuizQuestion[] };
+type SavedAnswer = { questionId: string; selectedIndex: number };
+type WeakConcept = { concept: string; incorrectCount: number; totalQuestions: number };
+type Review = {
+  questionId: string;
+  prompt: string;
+  selectedIndex: number | null;
+  correctIndex: number;
+  explanation: string;
+  concept: string;
+  isCorrect: boolean;
+};
+type Attempt = {
+  id: string;
+  quizId?: string;
+  status?: string;
+  score?: number;
+  correctCount?: number;
+  answers?: SavedAnswer[];
+  weakConcepts?: WeakConcept[];
+  submittedAt?: string;
+  explanations?: Review[];
+};
+type HistoryItem = Attempt & {
+  quiz: { id: string; title: string; difficulty: string; questionCount: number };
+};
 
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const response = await fetch(`${API}${path}`, {
@@ -46,6 +73,11 @@ export function App() {
   const [materialText, setMaterialText] = useState("");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [attempt, setAttempt] = useState<Attempt | null>(null);
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [savingAnswers, setSavingAnswers] = useState(false);
   useEffect(() => {
     void request<{ accessToken: string }>("/auth/refresh", { method: "POST" })
       .then(async ({ accessToken }) => {
@@ -72,6 +104,36 @@ export function App() {
         .then(setSubjects)
         .catch((e: Error) => setError(e.message));
   }, [token]);
+  const loadHistory = () => {
+    if (token)
+      void request<HistoryItem[]>("/practice/history", {}, token)
+        .then(setHistory)
+        .catch((e: Error) => setError(e.message));
+  };
+  useEffect(loadHistory, [token]);
+  useEffect(() => {
+    if (!attempt || attempt.status === "submitted") return;
+    const timer = window.setTimeout(() => {
+      setSavingAnswers(true);
+      void request<Attempt>(
+        `/attempts/${attempt.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            answers: Object.entries(answers).map(([questionId, selectedIndex]) => ({
+              questionId,
+              selectedIndex
+            }))
+          })
+        },
+        token
+      )
+        .then(setAttempt)
+        .catch((e: Error) => setError(e.message))
+        .finally(() => setSavingAnswers(false));
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [answers, attempt?.id, attempt?.status, token]);
   useEffect(() => {
     if (token)
       void request<Material[]>("/materials", {}, token)
@@ -146,6 +208,70 @@ export function App() {
       setError((e as Error).message);
     } finally {
       setSummaryLoading(false);
+    }
+  }
+  async function makeQuiz(materialId: string) {
+    setError("");
+    try {
+      const next = await request<Quiz>(
+        `/materials/${materialId}/quizzes`,
+        { method: "POST", body: JSON.stringify({ questionCount: 5, difficulty: "mixed" }) },
+        token
+      );
+      const started = await request<Attempt>(
+        `/quizzes/${next.id}/attempts`,
+        { method: "POST" },
+        token
+      );
+      setQuiz(next);
+      setAttempt(started);
+      setAnswers(
+        Object.fromEntries((started.answers ?? []).map((answer) => [answer.questionId, answer.selectedIndex]))
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function submitQuiz() {
+    if (!quiz || !attempt) return;
+    try {
+      const saved = await request<Attempt>(
+        `/attempts/${attempt.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            answers: Object.entries(answers).map(([questionId, selectedIndex]) => ({
+              questionId,
+              selectedIndex
+            }))
+          })
+        },
+        token
+      );
+      const result = await request<Attempt>(
+        `/attempts/${attempt.id}/submit`,
+        { method: "POST" },
+        token
+      );
+      setAttempt({ ...saved, ...result, status: "submitted" });
+      loadHistory();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function retryIncorrect() {
+    if (!attempt) return;
+    try {
+      const next = await request<{ quiz: Quiz; attempt: Attempt }>(
+        `/attempts/${attempt.id}/retry`,
+        { method: "POST" },
+        token
+      );
+      setQuiz(next.quiz);
+      setAttempt(next.attempt);
+      setAnswers({});
+    } catch (e) {
+      setError((e as Error).message);
     }
   }
   if (booting)
@@ -330,6 +456,12 @@ export function App() {
                 >
                   Summarize
                 </button>
+                <button
+                  onClick={() => void makeQuiz(material._id)}
+                  className="ml-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+                >
+                  Quiz
+                </button>
               </div>
               <p className="mt-1 text-sm text-slate-500">
                 {material.characterCount.toLocaleString()} characters
@@ -362,6 +494,108 @@ export function App() {
           {summaryLoading && <p className="mt-3 text-sm text-slate-500">Generating…</p>}
         </section>
       )}
+      {quiz && attempt && (
+        <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <h2 className="text-xl font-semibold">{quiz.title}</h2>
+          <div className="mt-4 space-y-5">
+            {quiz.questions.map((question, index) => (
+              <fieldset key={question.id}>
+                <legend className="font-semibold">
+                  {index + 1}. {question.prompt}
+                </legend>
+                <div className="mt-2 space-y-2">
+                  {question.options.map((option, optionIndex) => (
+                    <label key={option} className="flex gap-2 rounded-xl bg-slate-50 p-3">
+                      <input
+                        type="radio"
+                        name={question.id}
+                        disabled={attempt.status === "submitted"}
+                        checked={answers[question.id] === optionIndex}
+                        onChange={() =>
+                          setAnswers((current) => ({ ...current, [question.id]: optionIndex }))
+                        }
+                      />
+                      {option}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ))}
+          </div>
+          {attempt.status === "submitted" ? (
+            <>
+              <p className="mt-5 rounded-xl bg-emerald-50 p-3 font-semibold text-emerald-800">
+                Score: {attempt.score}% ({attempt.correctCount} of {quiz.questions.length} correct)
+              </p>
+              {(attempt.weakConcepts?.length ?? 0) > 0 && (
+                <div className="mt-4 rounded-2xl bg-amber-50 p-4 text-amber-950">
+                  <h3 className="font-semibold">Focus on these concepts</h3>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+                    {attempt.weakConcepts?.map((concept) => (
+                      <li key={concept.concept}>
+                        {concept.concept}: {concept.incorrectCount} missed
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="mt-4 space-y-3">
+                {attempt.explanations?.map((review, index) => (
+                  <article
+                    key={review.questionId}
+                    className={`rounded-2xl p-4 text-sm ${review.isCorrect ? "bg-emerald-50" : "bg-red-50"}`}
+                  >
+                    <p className="font-semibold">{index + 1}. {review.isCorrect ? "Correct" : "Review this"}</p>
+                    <p className="mt-1">{review.explanation}</p>
+                    {!review.isCorrect && <p className="mt-1">Correct answer: {quiz.questions.find((question) => question.id === review.questionId)?.options[review.correctIndex]}</p>}
+                  </article>
+                ))}
+              </div>
+              {(attempt.weakConcepts?.length ?? 0) > 0 && (
+                <button
+                  onClick={() => void retryIncorrect()}
+                  className="mt-4 w-full rounded-2xl bg-slate-900 px-5 py-4 font-semibold text-white"
+                >
+                  Retry incorrect questions
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="mt-4 text-sm text-slate-500">{savingAnswers ? "Saving answers…" : "Answers save automatically."}</p>
+              <button
+                onClick={() => void submitQuiz()}
+                className="mt-3 w-full rounded-2xl bg-brand px-5 py-4 font-semibold text-white"
+              >
+                Submit quiz
+              </button>
+            </>
+          )}
+        </section>
+      )}
+      <section className="mt-8">
+        <h2 className="text-xl font-semibold">Practice history</h2>
+        <div className="mt-3 space-y-2">
+          {history.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+              Complete a quiz to see your progress here.
+            </p>
+          ) : (
+            history.map((item) => (
+              <article key={item.id} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="font-semibold">{item.quiz.title}</p>
+                    <p className="mt-1 text-sm text-slate-500">{item.quiz.difficulty} · {item.quiz.questionCount} questions</p>
+                  </div>
+                  <p className="font-semibold text-brand">{item.score}%</p>
+                </div>
+                {(item.weakConcepts?.length ?? 0) > 0 && <p className="mt-2 text-sm text-slate-600">Review: {item.weakConcepts?.map((concept) => concept.concept).join(", ")}</p>}
+              </article>
+            ))
+          )}
+        </div>
+      </section>
     </main>
   );
 }
