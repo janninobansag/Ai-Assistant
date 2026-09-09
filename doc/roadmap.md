@@ -119,7 +119,7 @@ Status: **In progress**. Installable PWA metadata, public shell caching, offline
 - [ ] Rate limiting, abuse controls, provider circuit breaker, and quota UI.
 - [ ] Structured logging, metrics, error reporting, health checks, and database backups.
 - [ ] Privacy policy, terms, AI disclosure, account export, and account deletion.
-- [ ] Production deployment and smoke-test checklist.
+- [ ] Production deployment and smoke-test checklist..
 
 ### Exit criteria
 
