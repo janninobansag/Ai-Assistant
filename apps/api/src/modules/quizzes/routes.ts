@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { env } from "../../config/env.js";
 import { requireAuth, userId } from "../../middleware/auth.js";
 import { Material } from "../../models/material.js";
 import { Quiz } from "../../models/quiz.js";
@@ -23,7 +24,7 @@ const publicQuiz = (quiz: any) => ({
   questions: quiz.questions.map((q: any) => ({ id: q._id, prompt: q.prompt, options: q.options }))
 });
 const publicAttempt = (attempt: any) => ({
-  id: attempt.id,
+  id: attempt.id ?? String(attempt._id),
   quizId: String(attempt.quizId),
   status: attempt.status,
   answers: attempt.answers.map((answer: any) => ({
@@ -87,7 +88,9 @@ router.post("/materials/:materialId/quizzes", async (req, res) => {
     sourceContentHash: material.contentHash,
     difficulty: parsed.data.difficulty,
     questionCount: parsed.data.questionCount,
-    promptVersion: "quiz-v1"
+    // Provider is part of the cache key: a fake local quiz must never be served after switching to hosted AI.
+    promptVersion: "quiz-v2",
+    generationProvider: env.AI_PROVIDER
   };
   if (!parsed.data.forceRegenerate) {
     const cached = await Quiz.findOne(query).sort({ createdAt: -1 });
@@ -98,17 +101,28 @@ router.post("/materials/:materialId/quizzes", async (req, res) => {
     const output = quizOutputSchema.parse(
       await generateQuiz(material.normalizedText, parsed.data.questionCount, parsed.data.difficulty)
     );
+    if (output.questions.length !== parsed.data.questionCount)
+      throw new z.ZodError([
+        { code: z.ZodIssueCode.custom, path: ["questions"], message: "Unexpected question count." }
+      ]);
     const quiz = await Quiz.create({ ...output, ...query, subjectId: material.subjectId });
     return res
       .status(201)
       .json({ data: publicQuiz(quiz), meta: { cached: false, requestId: null } });
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Quiz generation failed.";
+    const code = message.includes("not configured")
+      ? "AI_PROVIDER_UNAVAILABLE"
+      : "AI_OUTPUT_INVALID";
     return res
       .status(502)
       .json({
         error: {
-          code: "AI_OUTPUT_INVALID",
-          message: "Quiz generation returned invalid output. Try again.",
+          code,
+          message:
+            code === "AI_PROVIDER_UNAVAILABLE"
+              ? message
+              : "Quiz generation returned invalid output. Try again.",
           requestId: null
         }
       });
@@ -242,6 +256,7 @@ router.post("/attempts/:attemptId/retry", async (req, res) => {
     materialId: source.materialId,
     sourceContentHash: source.sourceContentHash,
     promptVersion: source.promptVersion,
+    generationProvider: source.generationProvider ?? env.AI_PROVIDER,
     difficulty: source.difficulty,
     questionCount: incorrect.length,
     title: `Retry: ${source.title}`,
@@ -278,5 +293,17 @@ router.get("/practice/history", async (req, res) => {
     }),
     meta: { requestId: null }
   });
+});
+router.delete("/practice/history/:attemptId", async (req, res) => {
+  const deleted = await QuizAttempt.findOneAndDelete({
+    _id: req.params.attemptId,
+    userId: userId(req),
+    status: "submitted"
+  });
+  return deleted
+    ? res.status(204).end()
+    : res
+        .status(404)
+        .json({ error: { code: "NOT_FOUND", message: "Completed attempt not found.", requestId: null } });
 });
 export default router;

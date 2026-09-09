@@ -1,19 +1,21 @@
-import { type FormEvent, StrictMode, useEffect, useState } from "react";
+import { type FormEvent, StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 
-const API = "http://localhost:4000/api/v1";
+const API = import.meta.env.VITE_API_URL ?? "http://localhost:4000/api/v1";
+type BeforeInstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 type User = { id: string; email: string; displayName: string };
 type Subject = { _id: string; name: string };
-type Material = { _id: string; title: string; characterCount: number };
+type Material = { _id: string; subjectId: string; title: string; characterCount: number };
 type Summary = {
+  materialId?: string;
   overview: string;
   keyPoints: string[];
   definitions: Array<{ term: string; meaning: string }>;
   rememberThis: string[];
 };
 type QuizQuestion = { id: string; prompt: string; options: string[] };
-type Quiz = { id: string; title: string; questions: QuizQuestion[] };
+type Quiz = { id: string; materialId: string; title: string; questions: QuizQuestion[] };
 type SavedAnswer = { questionId: string; selectedIndex: number };
 type WeakConcept = { concept: string; incorrectCount: number; totalQuestions: number };
 type Review = {
@@ -37,8 +39,12 @@ type Attempt = {
   explanations?: Review[];
 };
 type HistoryItem = Attempt & {
-  quiz: { id: string; title: string; difficulty: string; questionCount: number };
+  quiz: { id: string; materialId?: string; title: string; difficulty: string; questionCount: number };
 };
+type Citation = { materialId: string; chunkId: string; label: string };
+type TutorMessage = { id?: string; role: "user" | "assistant"; content: string; citations?: Citation[] };
+type Conversation = { id: string; title: string; materialIds: string[]; messages?: TutorMessage[] };
+type SourceExcerpt = { label: string; text: string };
 
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const response = await fetch(`${API}${path}`, {
@@ -60,6 +66,9 @@ export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [booting, setBooting] = useState(true);
   const [online, setOnline] = useState(() => navigator.onLine);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [updateReady, setUpdateReady] = useState(false);
+  const serviceWorkerRegistration = useRef<ServiceWorkerRegistration | null>(null);
   const [mode, setMode] = useState<"login" | "register">("register");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -77,7 +86,17 @@ export function App() {
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [removingAttemptId, setRemovingAttemptId] = useState("");
   const [savingAnswers, setSavingAnswers] = useState(false);
+  const [removingMaterialId, setRemovingMaterialId] = useState("");
+  const [conversation, setConversation] = useState<Conversation | null>(null);
+  const [tutorQuestion, setTutorQuestion] = useState("");
+  const [tutorBusy, setTutorBusy] = useState(false);
+  const [sourceExcerpt, setSourceExcerpt] = useState<SourceExcerpt | null>(null);
+  const tutorAbort = useRef<AbortController | null>(null);
+  const visibleMaterials = selectedSubject
+    ? materials.filter((material) => material.subjectId === selectedSubject)
+    : materials;
   useEffect(() => {
     void request<{ accessToken: string }>("/auth/refresh", { method: "POST" })
       .then(async ({ accessToken }) => {
@@ -88,6 +107,32 @@ export function App() {
       .catch(() => undefined)
       .finally(() => setBooting(false));
   }, []);
+  useEffect(() => {
+    const onInstallPrompt = (event: Event) => { event.preventDefault(); setInstallPrompt(event as BeforeInstallPromptEvent); };
+    const onInstalled = () => setInstallPrompt(null);
+    window.addEventListener("beforeinstallprompt", onInstallPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/service-worker.js").then((registration) => {
+      serviceWorkerRegistration.current = registration;
+      if (registration.waiting) setUpdateReady(true);
+      registration.addEventListener("updatefound", () => {
+        const worker = registration.installing;
+        worker?.addEventListener("statechange", () => { if (worker.state === "installed" && navigator.serviceWorker.controller) setUpdateReady(true); });
+      });
+    }).catch(() => undefined);
+    return () => { window.removeEventListener("beforeinstallprompt", onInstallPrompt); window.removeEventListener("appinstalled", onInstalled); };
+  }, []);
+  async function installApp() {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    if ((await installPrompt.userChoice).outcome === "accepted") setInstallPrompt(null);
+  }
+  function applyUpdate() {
+    const registration = serviceWorkerRegistration.current;
+    if (!registration?.waiting) return window.location.reload();
+    registration.waiting.postMessage({ type: "SKIP_WAITING" });
+    navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload(), { once: true });
+  }
   useEffect(() => {
     const on = () => setOnline(true);
     const off = () => setOnline(false);
@@ -193,6 +238,26 @@ export function App() {
       setError((e as Error).message);
     }
   }
+  async function removeMaterial(material: Material) {
+    if (!window.confirm(`Remove “${material.title}” permanently? Its summaries, quizzes, and practice attempts will also be deleted.`)) return;
+    setRemovingMaterialId(material._id);
+    try {
+      await request<void>(`/materials/${material._id}`, { method: "DELETE" }, token);
+      setMaterials((items) => items.filter((item) => item._id !== material._id));
+      if (quiz?.materialId === material._id) {
+        setQuiz(null);
+        setAttempt(null);
+        setAnswers({});
+      }
+      if (summary?.materialId === material._id) setSummary(null);
+      setHistory((items) => items.filter((item) => item.quiz.materialId !== material._id));
+      if (conversation?.materialIds.includes(material._id)) setConversation(null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRemovingMaterialId("");
+    }
+  }
   async function summarize(materialId: string) {
     setSummaryLoading(true);
     setError("");
@@ -274,6 +339,81 @@ export function App() {
       setError((e as Error).message);
     }
   }
+  async function removePracticeAttempt(attemptId: string) {
+    if (!window.confirm("Remove this practice attempt permanently? This cannot be undone.")) return;
+    setRemovingAttemptId(attemptId);
+    try {
+      await request<void>(`/practice/history/${attemptId}`, { method: "DELETE" }, token);
+      setHistory((items) => items.filter((item) => item.id !== attemptId));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setRemovingAttemptId("");
+    }
+  }
+  async function openTutor(material: Material) {
+    setError("");
+    try {
+      const next = await request<Conversation>(
+        "/conversations",
+        { method: "POST", body: JSON.stringify({ subjectId: material.subjectId, materialIds: [material._id], title: `Tutor: ${material.title}` }) },
+        token
+      );
+      setConversation({ ...next, messages: [] });
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function askTutor(event: FormEvent) {
+    event.preventDefault();
+    if (!conversation || !tutorQuestion.trim() || tutorBusy) return;
+    const question = tutorQuestion.trim();
+    const localUser: TutorMessage = { role: "user", content: question };
+    const localAssistant: TutorMessage = { role: "assistant", content: "" };
+    setConversation((current) => current ? { ...current, messages: [...(current.messages ?? []), localUser, localAssistant] } : current);
+    setTutorQuestion(""); setTutorBusy(true); setError("");
+    try {
+      const abort = new AbortController();
+      tutorAbort.current = abort;
+      const response = await fetch(`${API}/conversations/${conversation.id}/messages`, {
+        method: "POST", credentials: "include",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ content: question, clientMessageId: crypto.randomUUID(), allowGeneralKnowledge: false }), signal: abort.signal
+      });
+      if (!response.ok || !response.body) throw new Error("Tutor request could not be started.");
+      const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
+      while (true) {
+        const { value, done } = await reader.read(); if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n"); buffer = events.pop() ?? "";
+        for (const event of events) {
+          const name = event.match(/^event: (.+)$/m)?.[1]; const raw = event.match(/^data: (.+)$/m)?.[1];
+          if (!name || !raw) continue; const data = JSON.parse(raw) as { text?: string; items?: Citation[]; message?: string };
+          if (name === "delta") setConversation((current) => current ? { ...current, messages: (current.messages ?? []).map((message, index, all) => index === all.length - 1 ? { ...message, content: message.content + (data.text ?? "") } : message) } : current);
+          if (name === "citations") setConversation((current) => current ? { ...current, messages: (current.messages ?? []).map((message, index, all) => index === all.length - 1 ? { ...message, citations: data.items ?? [] } : message) } : current);
+          if (name === "error") throw new Error(data.message ?? "Tutor unavailable.");
+        }
+      }
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") {
+        const message = (e as Error).message;
+        setError(message);
+        setConversation((current) => current ? {
+          ...current,
+          messages: (current.messages ?? []).map((item, index, all) =>
+            index === all.length - 1 && item.role === "assistant" && !item.content
+              ? { ...item, content: `Sorry, I could not answer that. ${message}` }
+              : item
+          )
+        } : current);
+      }
+    } finally { tutorAbort.current = null; setTutorBusy(false); }
+  }
+  async function openCitation(citation: Citation) {
+    try {
+      setSourceExcerpt(await request<SourceExcerpt>(`/materials/${citation.materialId}/chunks/${citation.chunkId}`, {}, token));
+    } catch (e) { setError((e as Error).message); }
+  }
   if (booting)
     return (
       <main className="mx-auto flex min-h-screen max-w-lg items-center justify-center px-5">
@@ -348,21 +488,17 @@ export function App() {
           </span>
           <h1 className="mt-2 text-3xl font-bold">Hi, {user.displayName}</h1>
         </div>
-        <button
-          onClick={() => {
-            setUser(null);
-            setToken("");
-          }}
-          className="text-sm font-semibold text-slate-500"
-        >
-          Sign out
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          {installPrompt && <button type="button" onClick={() => void installApp()} className="rounded-xl border border-brand px-3 py-2 text-sm font-semibold text-brand">Install app</button>}
+          <button onClick={() => { setUser(null); setToken(""); }} className="text-sm font-semibold text-slate-500">Sign out</button>
+        </div>
       </header>
       {!online && (
         <p role="status" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
           You are offline. Existing data is available, but saving requires a connection.
         </p>
       )}
+      {updateReady && <p role="status" className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-blue-50 p-3 text-sm text-blue-950">A newer version is ready.<button type="button" onClick={applyUpdate} className="font-semibold text-brand underline">Refresh</button></p>}
       <section className="mt-7 rounded-3xl bg-brand p-5 text-white">
         <p className="text-sm text-blue-100">Your study library</p>
         <p className="mt-1 text-3xl font-bold">{subjects.length} subjects</p>
@@ -439,14 +575,31 @@ export function App() {
       </section>
       {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <section className="mt-8">
-        <h2 className="text-xl font-semibold">Recent materials</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">
+            {selectedSubject
+              ? `${subjects.find((subject) => subject._id === selectedSubject)?.name ?? "Subject"} materials`
+              : "Recent materials"}
+          </h2>
+          {selectedSubject && (
+            <button
+              type="button"
+              onClick={() => setSelectedSubject("")}
+              className="text-sm font-semibold text-brand"
+            >
+              Show all
+            </button>
+          )}
+        </div>
         <div className="mt-3 space-y-2">
-          {materials.length === 0 && (
+          {visibleMaterials.length === 0 && (
             <p className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-              No materials yet. Save pasted notes to start studying.
+              {selectedSubject
+                ? "No materials in this subject yet."
+                : "No materials yet. Save pasted notes to start studying."}
             </p>
           )}
-          {materials.map((material) => (
+          {visibleMaterials.map((material) => (
             <div key={material._id} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-semibold">{material.title}</p>
@@ -462,10 +615,21 @@ export function App() {
                 >
                   Quiz
                 </button>
+                <button onClick={() => void openTutor(material)} className="ml-2 rounded-xl border border-brand px-3 py-2 text-sm font-semibold text-brand">
+                  Ask tutor
+                </button>
               </div>
               <p className="mt-1 text-sm text-slate-500">
                 {material.characterCount.toLocaleString()} characters
               </p>
+              <button
+                type="button"
+                disabled={removingMaterialId === material._id}
+                onClick={() => void removeMaterial(material)}
+                className="mt-3 text-sm font-semibold text-red-700 disabled:opacity-50"
+              >
+                {removingMaterialId === material._id ? "Removing…" : "Remove material"}
+              </button>
             </div>
           ))}
         </div>
@@ -474,16 +638,27 @@ export function App() {
         <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Summary</h2>
-            <button
-              onClick={() =>
-                void navigator.clipboard?.writeText(
-                  `${summary.overview}\n\n${summary.keyPoints.join("\n")}`
-                )
-              }
-              className="text-sm font-semibold text-brand"
-            >
-              Copy
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() =>
+                  void navigator.clipboard?.writeText(
+                    `${summary.overview}\n\n${summary.keyPoints.join("\n")}`
+                  )
+                }
+                className="text-sm font-semibold text-brand"
+              >
+                Copy
+              </button>
+              <button
+                type="button"
+                onClick={() => setSummary(null)}
+                aria-label="Close summary"
+                title="Close summary"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-xl leading-none text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              >
+                ×
+              </button>
+            </div>
           </div>
           <p className="mt-3 text-slate-700">{summary.overview}</p>
           <ul className="mt-3 list-disc space-y-2 pl-5 text-slate-700">
@@ -496,7 +671,22 @@ export function App() {
       )}
       {quiz && attempt && (
         <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <h2 className="text-xl font-semibold">{quiz.title}</h2>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-xl font-semibold">{quiz.title}</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setQuiz(null);
+                setAttempt(null);
+                setAnswers({});
+              }}
+              aria-label="Close quiz"
+              title="Close quiz"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xl leading-none text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            >
+              ×
+            </button>
+          </div>
           <div className="mt-4 space-y-5">
             {quiz.questions.map((question, index) => (
               <fieldset key={question.id}>
@@ -573,6 +763,17 @@ export function App() {
           )}
         </section>
       )}
+      {conversation && (
+        <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="flex items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">{conversation.title}</h2><p className="mt-1 text-sm text-slate-500">Answers are limited to this material.</p></div><button onClick={() => setConversation(null)} className="text-sm font-semibold text-slate-500">Close</button></div>
+          <div className="mt-4 space-y-3" aria-live="polite">
+            {conversation.messages?.length === 0 && <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Ask about a definition, example, or difficult concept in your notes.</p>}
+            {conversation.messages?.map((message, index) => <article key={index} className={`rounded-2xl p-4 text-sm ${message.role === "user" ? "ml-8 bg-brand text-white" : "mr-4 bg-slate-50 text-slate-800"}`}><p className="whitespace-pre-wrap">{message.content || (tutorBusy ? "Thinking…" : "")}</p>{message.citations && <div className="mt-3 flex flex-wrap gap-2">{message.citations.map((citation) => <button type="button" key={citation.chunkId} onClick={() => void openCitation(citation)} className="rounded-full bg-white px-2 py-1 text-xs text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100">Source: {citation.label}</button>)}</div>}</article>)}
+          </div>
+          {sourceExcerpt && <aside className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm text-slate-800"><div className="flex justify-between gap-3"><h3 className="font-semibold">{sourceExcerpt.label}</h3><button type="button" onClick={() => setSourceExcerpt(null)} className="font-semibold text-slate-500">Close</button></div><p className="mt-2 whitespace-pre-wrap">{sourceExcerpt.text}</p></aside>}
+          <form onSubmit={askTutor} className="mt-4 space-y-2"><label className="sr-only" htmlFor="tutor-question">Ask the tutor</label><textarea id="tutor-question" value={tutorQuestion} onChange={(event) => setTutorQuestion(event.target.value)} maxLength={2000} placeholder="Ask a question about this material…" rows={3} className="field resize-none" disabled={tutorBusy} /><div className="flex gap-2"><button disabled={tutorBusy || !tutorQuestion.trim()} className="flex-1 rounded-2xl bg-brand px-5 py-3 font-semibold text-white disabled:opacity-50">{tutorBusy ? "Answering…" : "Send"}</button>{tutorBusy && <button type="button" onClick={() => tutorAbort.current?.abort()} className="rounded-2xl border border-red-300 px-5 py-3 font-semibold text-red-700">Stop</button>}</div></form>
+        </section>
+      )}
       <section className="mt-8">
         <h2 className="text-xl font-semibold">Practice history</h2>
         <div className="mt-3 space-y-2">
@@ -591,6 +792,14 @@ export function App() {
                   <p className="font-semibold text-brand">{item.score}%</p>
                 </div>
                 {(item.weakConcepts?.length ?? 0) > 0 && <p className="mt-2 text-sm text-slate-600">Review: {item.weakConcepts?.map((concept) => concept.concept).join(", ")}</p>}
+                <button
+                  type="button"
+                  disabled={removingAttemptId === item.id}
+                  onClick={() => void removePracticeAttempt(item.id)}
+                  className="mt-3 text-sm font-semibold text-red-700 disabled:opacity-50"
+                >
+                  {removingAttemptId === item.id ? "Removing…" : "Remove"}
+                </button>
               </article>
             ))
           )}

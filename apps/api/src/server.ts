@@ -19,10 +19,10 @@ async function start(): Promise<void> {
     process.once("SIGTERM", () => void shutdown("SIGTERM"));
   } catch (error) {
     console.error(
-      "MongoDB connection failed. Check MONGODB_URI and ensure MongoDB is reachable.",
+      "MongoDB connection failed. Retrying in 5 seconds. Check MONGODB_URI and ensure MongoDB is reachable.",
       error
     );
-    process.exit(1);
+    setTimeout(() => void start(), 5_000);
   }
 }
 

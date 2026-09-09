@@ -10,6 +10,7 @@ import subjectRoutes from "./modules/subjects/routes.js";
 import materialRoutes from "./modules/materials/routes.js";
 import summaryRoutes from "./modules/summaries/routes.js";
 import quizRoutes from "./modules/quizzes/routes.js";
+import conversationRoutes from "./modules/conversations/routes.js";
 const pinoMiddleware = pinoHttp as unknown as (options?: object) => RequestHandler;
 export const app = express();
 export const fakeProvider = new FakeProvider();
@@ -26,6 +27,7 @@ app.use("/api/v1/subjects", subjectRoutes);
 app.use("/api/v1/materials", materialRoutes);
 app.use("/api/v1", summaryRoutes);
 app.use("/api/v1", quizRoutes);
+app.use("/api/v1", conversationRoutes);
 app.get("/api/v1/health/live", (_req, res) =>
   res.json({ data: { status: "ok" }, meta: { requestId: null } })
 );

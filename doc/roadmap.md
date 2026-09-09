@@ -89,28 +89,32 @@ Status: **Complete**. Quiz generation, answer-key protection, persisted autosave
 
 ## Phase 4 — Grounded tutor chat
 
+Status: **Complete**. Source-only tutor conversations, ownership-scoped keyword retrieval, persistence, native Gemini streaming, cancellation, source excerpts, bounded recent context with durable rolling summaries, and prompt-injection delimiters are implemented.
+
 ### Deliverables
 
-- [ ] Keyword retrieval over material chunks.
-- [ ] Conversation and message persistence.
-- [ ] SSE response streaming, cancellation, and interrupted-message handling.
-- [ ] Citations that open the matching material excerpt.
-- [ ] Context-window trimming and conversation summarization.
-- [ ] Prompt-injection boundaries for untrusted study material.
+- [x] Keyword retrieval over material chunks.
+- [x] Conversation and message persistence.
+- [x] SSE response streaming, cancellation, and interrupted-message handling.
+- [x] Citations that open the matching material excerpt.
+- [x] Context-window trimming and conversation summarization.
+- [x] Prompt-injection boundaries for untrusted study material.
 
 ### Exit criteria
 
-- [ ] Chat cannot access another user's chunks.
-- [ ] Answers cite only chunks supplied to that generation request.
-- [ ] The assistant states when the selected material does not support an answer.
-- [ ] Disconnecting stops or safely finalizes provider work.
-- [ ] Streaming works over the chosen production hosting path.
+- [x] Chat cannot access another user's chunks.
+- [x] Answers cite only chunks supplied to that generation request.
+- [x] The assistant states when the selected material does not support an answer.
+- [x] Disconnecting stops or safely finalizes provider work.
+- [x] Streaming works over the chosen development hosting path; verify the equivalent proxy configuration before production deployment.
 
 ## Phase 5 — PWA hardening and beta
 
+Status: **In progress**. Installable PWA metadata, public shell caching, offline fallback, and a controlled update prompt are implemented. Deployment, accessibility audit, operational safeguards, and beta readiness remain.
+
 ### Deliverables
 
-- [ ] Manifest, install assets, service worker, update flow, and offline screen.
+- [x] Manifest, install assets, service worker, update flow, and offline screen.
 - [ ] Mobile accessibility and responsive-layout audit.
 - [ ] Rate limiting, abuse controls, provider circuit breaker, and quota UI.
 - [ ] Structured logging, metrics, error reporting, health checks, and database backups.
