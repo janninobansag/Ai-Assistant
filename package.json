@@ -1,0 +1,29 @@
+{
+  "name": "ai-study-assistant",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace @study/web\" \"npm run dev --workspace @study/api\"",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "format": "prettier --write \"apps/**/*.{ts,tsx,js,json,css}\" \"packages/**/*.{ts,tsx,js,json,css}\" \"*.{js,json,yml,yaml}\"",
+    "format:check": "prettier --check \"apps/**/*.{ts,tsx,js,json,css}\" \"packages/**/*.{ts,tsx,js,json,css}\" \"*.{js,json,yml,yaml}\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@typescript-eslint/parser": "^8.19.1",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vitest": "^5.0.0"
+  }
+}
