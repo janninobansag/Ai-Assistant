@@ -5,6 +5,15 @@ import { RefreshSession } from "../../models/refresh-session.js";
 import { hashPassword, verifyPassword } from "../../lib/passwords.js";
 import { createToken, hashToken, verifyToken } from "../../lib/tokens.js";
 import { requireAuth, userId } from "../../middleware/auth.js";
+import { Subject } from "../../models/subject.js";
+import { Material } from "../../models/material.js";
+import { MaterialChunk } from "../../models/material-chunk.js";
+import { Summary } from "../../models/summary.js";
+import { Quiz } from "../../models/quiz.js";
+import { QuizAttempt } from "../../models/quiz-attempt.js";
+import { Conversation } from "../../models/conversation.js";
+import { Message } from "../../models/message.js";
+import { UsageDaily } from "../../models/usage-daily.js";
 
 const router = Router();
 const credentials = z.object({
@@ -19,6 +28,7 @@ const profile = z.object({
   answerLength: z.enum(["short", "normal", "detailed"]).optional(),
   theme: z.enum(["system", "light", "dark"]).optional()
 });
+const deleteAccountInput = z.object({ password: z.string().min(8).max(128) });
 const cookie = (name: string, value: string, maxAge: number) =>
   `${name}=${value}; Max-Age=${maxAge}; Path=/api/v1/auth; HttpOnly; SameSite=Lax${process.env.NODE_ENV === "production" ? "; Secure" : ""}`;
 const publicUser = (u: any) => ({
@@ -182,5 +192,33 @@ router.patch("/me", requireAuth, async (req, res) => {
   if (parsed.data.theme) update["preferences.theme"] = parsed.data.theme;
   const found = await User.findByIdAndUpdate(userId(req), { $set: update }, { new: true });
   return res.json({ data: { user: found ? publicUser(found) : null }, meta: { requestId: null } });
+});
+router.get("/me/export", requireAuth, async (req, res) => {
+  const owner = userId(req);
+  const account = await User.findById(owner).lean();
+  if (!account) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Account not found.", requestId: null } });
+  const [subjects, materials, chunks, summaries, quizzes, attempts, conversations, messages] = await Promise.all([
+    Subject.find({ userId: owner }).lean(), Material.find({ userId: owner }).lean(), MaterialChunk.find({ userId: owner }).lean(),
+    Summary.find({ userId: owner }).lean(), Quiz.find({ userId: owner }).lean(), QuizAttempt.find({ userId: owner }).lean(),
+    Conversation.find({ userId: owner }).lean(), Message.find({ userId: owner }).lean()
+  ]);
+  res.setHeader("Content-Disposition", `attachment; filename="study-assistant-export-${new Date().toISOString().slice(0, 10)}.json"`);
+  return res.json({ data: { exportedAt: new Date().toISOString(), account: { id: String(account._id), email: account.email, displayName: account.displayName, preferences: account.preferences, createdAt: account.createdAt }, subjects, materials, chunks, summaries, quizzes, attempts, conversations, messages }, meta: { requestId: null } });
+});
+router.delete("/me", requireAuth, async (req, res) => {
+  const parsed = deleteAccountInput.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Enter your password to delete the account.", requestId: null } });
+  const owner = userId(req);
+  const account = await User.findById(owner);
+  if (!account || !(await verifyPassword(parsed.data.password, account.passwordHash))) return res.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Password is incorrect.", requestId: null } });
+  await Promise.all([
+    RefreshSession.deleteMany({ userId: owner }), Subject.deleteMany({ userId: owner }), Material.deleteMany({ userId: owner }),
+    MaterialChunk.deleteMany({ userId: owner }), Summary.deleteMany({ userId: owner }), Quiz.deleteMany({ userId: owner }),
+    QuizAttempt.deleteMany({ userId: owner }), Conversation.deleteMany({ userId: owner }), Message.deleteMany({ userId: owner }),
+    UsageDaily.deleteMany({ userId: owner })
+  ]);
+  await User.deleteOne({ _id: owner });
+  res.setHeader("Set-Cookie", cookie("refreshToken", "", 0));
+  return res.status(204).end();
 });
 export default router;

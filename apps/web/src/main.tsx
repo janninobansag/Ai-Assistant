@@ -45,6 +45,7 @@ type Citation = { materialId: string; chunkId: string; label: string };
 type TutorMessage = { id?: string; role: "user" | "assistant"; content: string; citations?: Citation[] };
 type Conversation = { id: string; title: string; materialIds: string[]; messages?: TutorMessage[] };
 type SourceExcerpt = { label: string; text: string };
+type DailyUsage = { limit: number; used: number; remaining: number };
 
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const response = await fetch(`${API}${path}`, {
@@ -66,6 +67,9 @@ export function App() {
   const [user, setUser] = useState<User | null>(null);
   const [booting, setBooting] = useState(true);
   const [online, setOnline] = useState(() => navigator.onLine);
+  const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [updateReady, setUpdateReady] = useState(false);
   const serviceWorkerRegistration = useRef<ServiceWorkerRegistration | null>(null);
@@ -149,6 +153,10 @@ export function App() {
         .then(setSubjects)
         .catch((e: Error) => setError(e.message));
   }, [token]);
+  const loadUsage = () => {
+    if (token) void request<DailyUsage>("/usage", {}, token).then(setDailyUsage).catch(() => undefined);
+  };
+  useEffect(loadUsage, [token]);
   const loadHistory = () => {
     if (token)
       void request<HistoryItem[]>("/practice/history", {}, token)
@@ -200,6 +208,34 @@ export function App() {
     } catch (e) {
       setError((e as Error).message);
     }
+  }
+  async function exportAccountData() {
+    try {
+      const data = await request<unknown>("/auth/me/export", {}, token);
+      const file = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const downloadUrl = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `study-assistant-export-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(downloadUrl);
+    } catch (e) { setError((e as Error).message); }
+  }
+  async function deleteAccount() {
+    const confirmation = window.prompt("This permanently deletes your account and all study data. Type DELETE to continue.");
+    if (confirmation !== "DELETE") return;
+    const accountPassword = window.prompt("Enter your password to permanently delete the account.");
+    if (!accountPassword) return;
+    try {
+      await request<null>("/auth/me", { method: "DELETE", body: JSON.stringify({ password: accountPassword }) }, token);
+      setUser(null); setToken(""); setSubjects([]); setMaterials([]); setHistory([]); setSummary(null); setQuiz(null); setConversation(null);
+    } catch (e) { setError((e as Error).message); }
+  }
+  async function signOut() {
+    try { await request<null>("/auth/logout", { method: "POST" }, token); } catch { /* Clear this device even if it is offline. */ }
+    setSettingsOpen(false);
+    setUser(null);
+    setToken("");
   }
   async function createSubject(event: FormEvent) {
     event.preventDefault();
@@ -488,11 +524,40 @@ export function App() {
           </span>
           <h1 className="mt-2 text-3xl font-bold">Hi, {user.displayName}</h1>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          {installPrompt && <button type="button" onClick={() => void installApp()} className="rounded-xl border border-brand px-3 py-2 text-sm font-semibold text-brand">Install app</button>}
-          <button onClick={() => { setUser(null); setToken(""); }} className="text-sm font-semibold text-slate-500">Sign out</button>
-        </div>
+        <button type="button" aria-label="Open settings" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(true)} className="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-xl text-slate-700 shadow-sm">⚙</button>
       </header>
+      {settingsOpen && (
+        <div role="presentation" onMouseDown={() => setSettingsOpen(false)} className="fixed inset-0 z-50 flex items-end bg-slate-950/30 p-4 sm:items-center sm:justify-center">
+          <section role="dialog" aria-modal="true" aria-labelledby="settings-title" onMouseDown={(event) => event.stopPropagation()} className="w-full max-w-md rounded-3xl bg-white p-5 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div><h2 id="settings-title" className="text-xl font-bold">Settings</h2><p className="mt-1 text-sm text-slate-500">Manage this device and your account.</p></div>
+              <button type="button" aria-label="Close settings" onClick={() => setSettingsOpen(false)} className="grid h-11 w-11 place-items-center rounded-2xl text-xl text-slate-500">×</button>
+            </div>
+            {dailyUsage && <p className="mt-5 rounded-2xl bg-blue-50 p-3 text-sm text-blue-950">AI points today: <strong>{dailyUsage.remaining} of {dailyUsage.limit} remaining</strong></p>}
+            <div className="mt-4 space-y-2">
+              {installPrompt && <button type="button" onClick={() => void installApp()} className="w-full rounded-2xl bg-brand px-4 py-3 text-left font-semibold text-white">Install Study Assistant</button>}
+              <button type="button" onClick={() => { setSettingsOpen(false); setPrivacyOpen(true); }} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800">Privacy &amp; AI use</button>
+              <button type="button" onClick={() => void exportAccountData()} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800">Export my data</button>
+              <button type="button" onClick={() => void signOut()} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800">Sign out</button>
+              <button type="button" onClick={() => void deleteAccount()} className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left font-semibold text-red-700">Delete account permanently</button>
+            </div>
+          </section>
+        </div>
+      )}
+      {privacyOpen && (
+        <div role="presentation" onMouseDown={() => setPrivacyOpen(false)} className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/30 p-4 sm:flex sm:items-center sm:justify-center">
+          <section role="dialog" aria-modal="true" aria-labelledby="privacy-title" onMouseDown={(event) => event.stopPropagation()} className="mx-auto my-8 w-full max-w-md rounded-3xl bg-white p-5 shadow-xl">
+            <div className="flex items-start justify-between gap-4"><div><h2 id="privacy-title" className="text-xl font-bold">Privacy &amp; AI use</h2><p className="mt-1 text-sm text-slate-500">How Study Assistant handles your study data.</p></div><button type="button" aria-label="Close privacy information" onClick={() => setPrivacyOpen(false)} className="grid h-11 w-11 place-items-center rounded-2xl text-xl text-slate-500">×</button></div>
+            <div className="mt-5 space-y-4 text-sm leading-6 text-slate-700">
+              <section><h3 className="font-semibold text-slate-950">What we store</h3><p>Your account details, subjects, study materials, generated summaries and quizzes, practice history, and tutor conversations are stored so you can return to them.</p></section>
+              <section><h3 className="font-semibold text-slate-950">How AI is used</h3><p>When you request a summary, quiz, or tutor answer, the necessary study text is sent to the configured AI provider. Tutor answers are limited to your selected material, but AI can still make mistakes—check important information against your source material.</p></section>
+              <section><h3 className="font-semibold text-slate-950">Your choices</h3><p>You can export your stored data or permanently delete your account from Settings. Deletion removes your account and its related study data from this application.</p></section>
+              <section><h3 className="font-semibold text-slate-950">Important</h3><p>Study Assistant is for learning support. It is not medical, legal, financial, or professional advice.</p></section>
+              <p className="rounded-2xl bg-amber-50 p-3 text-amber-900">Before public release, replace the draft policy details with your legal business name, contact email, hosting providers, and a reviewed privacy policy.</p>
+            </div>
+          </section>
+        </div>
+      )}
       {!online && (
         <p role="status" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
           You are offline. Existing data is available, but saving requires a connection.
@@ -503,6 +568,7 @@ export function App() {
         <p className="text-sm text-blue-100">Your study library</p>
         <p className="mt-1 text-3xl font-bold">{subjects.length} subjects</p>
         <p className="mt-1 text-blue-100">{materials.length} saved materials</p>
+        {dailyUsage && <p className="mt-3 text-sm text-blue-100">AI points today: {dailyUsage.remaining} of {dailyUsage.limit} remaining</p>}
       </section>
       <section className="mt-6">
         <h2 className="text-xl font-semibold">Subjects</h2>

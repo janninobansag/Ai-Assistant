@@ -20,6 +20,8 @@ const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional(),
   DAILY_POINTS_LIMIT: z.coerce.number().int().positive().default(20),
   GLOBAL_DAILY_AI_OPERATIONS: z.coerce.number().int().positive().default(500),
-  AI_MONTHLY_SPEND_LIMIT_USD: z.coerce.number().nonnegative().default(0)
+  AI_MONTHLY_SPEND_LIMIT_USD: z.coerce.number().nonnegative().default(0),
+  API_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(120),
+  AUTH_RATE_LIMIT_PER_15_MINUTES: z.coerce.number().int().positive().default(20)
 });
 export const env = envSchema.parse(process.env);
