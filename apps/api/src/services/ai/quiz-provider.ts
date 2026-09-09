@@ -5,7 +5,7 @@ export async function generateQuiz(
   count: number,
   difficulty: Difficulty
 ): Promise<QuizOutput> {
-  const snippet = text.trim().slice(0, 300);
+  const snippet = text.trim().slice(0, 220);
   const label = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
   return {
     title: `${label} practice quiz`,
@@ -18,7 +18,8 @@ export async function generateQuiz(
         "None of the above"
       ],
       correctIndex: 0,
-      explanation: "The answer is grounded in the supplied material."
+      explanation: "The answer is grounded in the supplied material.",
+      concept: "Core material recall"
     }))
   };
 }
