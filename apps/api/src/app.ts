@@ -11,6 +11,8 @@ import materialRoutes from "./modules/materials/routes.js";
 import summaryRoutes from "./modules/summaries/routes.js";
 import quizRoutes from "./modules/quizzes/routes.js";
 import conversationRoutes from "./modules/conversations/routes.js";
+import usageRoutes from "./modules/usage/routes.js";
+import { rateLimit } from "./middleware/rate-limit.js";
 const pinoMiddleware = pinoHttp as unknown as (options?: object) => RequestHandler;
 export const app = express();
 export const fakeProvider = new FakeProvider();
@@ -22,12 +24,15 @@ app.use(
     redact: ["req.headers.authorization", "req.headers.cookie", "res.headers.set-cookie"]
   })
 );
+app.use("/api", rateLimit({ name: "api", windowMs: 60_000, max: env.API_RATE_LIMIT_PER_MINUTE }));
+app.use("/api/v1/auth", rateLimit({ name: "auth", windowMs: 15 * 60_000, max: env.AUTH_RATE_LIMIT_PER_15_MINUTES }));
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/subjects", subjectRoutes);
 app.use("/api/v1/materials", materialRoutes);
 app.use("/api/v1", summaryRoutes);
 app.use("/api/v1", quizRoutes);
 app.use("/api/v1", conversationRoutes);
+app.use("/api/v1", usageRoutes);
 app.get("/api/v1/health/live", (_req, res) =>
   res.json({ data: { status: "ok" }, meta: { requestId: null } })
 );
