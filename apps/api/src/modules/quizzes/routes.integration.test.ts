@@ -27,6 +27,7 @@ describe("quiz attempts", () => {
       subjectId: new mongoose.Types.ObjectId(),
       sourceContentHash: "source-hash",
       promptVersion: "quiz-v1",
+      generationProvider: "fake",
       title: "Cells",
       difficulty: "mixed",
       questionCount: 3,

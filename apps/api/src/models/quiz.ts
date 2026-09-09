@@ -9,6 +9,7 @@ const quizSchema = new Schema(
     questionCount: { type: Number, required: true },
     sourceContentHash: { type: String, required: true },
     promptVersion: { type: String, required: true },
+    generationProvider: { type: String, enum: ["fake", "hosted"], required: true },
     questions: [
       {
         prompt: { type: String, required: true },
@@ -27,6 +28,7 @@ quizSchema.index({
   sourceContentHash: 1,
   difficulty: 1,
   questionCount: 1,
-  promptVersion: 1
+  promptVersion: 1,
+  generationProvider: 1
 });
 export const Quiz = model("Quiz", quizSchema);

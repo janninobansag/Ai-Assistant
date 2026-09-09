@@ -3,8 +3,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 
-// npm workspaces run API scripts from apps/api; explicitly load the root .env.
-config({ path: resolve(dirname(fileURLToPath(import.meta.url)), "../../../.env") });
+// This file lives in apps/api/src/config; walk four levels up to the workspace root.
+config({ path: resolve(dirname(fileURLToPath(import.meta.url)), "../../../../.env") });
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   API_PORT: z.coerce.number().int().positive().default(4000),

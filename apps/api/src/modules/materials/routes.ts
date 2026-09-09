@@ -3,6 +3,9 @@ import { Router } from "express";
 import { z } from "zod";
 import { Material } from "../../models/material.js";
 import { MaterialChunk } from "../../models/material-chunk.js";
+import { QuizAttempt } from "../../models/quiz-attempt.js";
+import { Quiz } from "../../models/quiz.js";
+import { Summary } from "../../models/summary.js";
 import { Subject } from "../../models/subject.js";
 import { requireAuth, userId } from "../../middleware/auth.js";
 import { chunkMaterial } from "../../services/materials/chunking.js";
@@ -79,6 +82,16 @@ router.get("/:materialId", async (req, res) => {
         .status(404)
         .json({ error: { code: "NOT_FOUND", message: "Material not found.", requestId: null } });
 });
+router.get("/:materialId/chunks/:chunkId", async (req, res) => {
+  const chunk = await MaterialChunk.findOne({
+    _id: req.params.chunkId,
+    materialId: req.params.materialId,
+    userId: userId(req)
+  }).select("materialId ordinal heading text");
+  return chunk
+    ? res.json({ data: { id: chunk.id, materialId: String(chunk.materialId), label: chunk.heading || `Section ${chunk.ordinal + 1}`, text: chunk.text }, meta: { requestId: null } })
+    : res.status(404).json({ error: { code: "NOT_FOUND", message: "Source excerpt not found.", requestId: null } });
+});
 router.patch("/:materialId", async (req, res) => {
   const parsed = materialInput
     .pick({ title: true, text: true, tags: true })
@@ -137,15 +150,20 @@ router.post("/:materialId/archive", async (req, res) => {
         .json({ error: { code: "NOT_FOUND", message: "Material not found.", requestId: null } });
 });
 router.delete("/:materialId", async (req, res) => {
+  const owner = userId(req);
   const found = await Material.findOneAndDelete({
     _id: req.params.materialId,
-    userId: userId(req)
+    userId: owner
   });
   if (!found)
     return res
       .status(404)
       .json({ error: { code: "NOT_FOUND", message: "Material not found.", requestId: null } });
-  await MaterialChunk.deleteMany({ materialId: found.id, userId: userId(req) });
+  const quizzes = await Quiz.find({ materialId: found.id, userId: owner }).select("_id").lean();
+  await MaterialChunk.deleteMany({ materialId: found.id, userId: owner });
+  await Summary.deleteMany({ materialId: found.id, userId: owner });
+  await QuizAttempt.deleteMany({ quizId: { $in: quizzes.map((quiz) => quiz._id) }, userId: owner });
+  await Quiz.deleteMany({ materialId: found.id, userId: owner });
   return res.status(204).end();
 });
 export default router;
