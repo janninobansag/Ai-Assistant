@@ -241,7 +241,19 @@ export function App() {
         .then(setDailyUsage)
         .catch(() => undefined);
   };
-  useEffect(loadUsage, [token]);
+  useEffect(() => {
+    if (!token) return;
+    loadUsage();
+    const refreshWhenActive = () => loadUsage();
+    const timer = window.setInterval(loadUsage, 30_000);
+    window.addEventListener("focus", refreshWhenActive);
+    window.addEventListener("online", refreshWhenActive);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshWhenActive);
+      window.removeEventListener("online", refreshWhenActive);
+    };
+  }, [token]);
   const loadHistory = () => {
     if (token)
       void request<HistoryItem[]>("/practice/history", {}, token)
@@ -690,6 +702,7 @@ export function App() {
     } finally {
       tutorAbort.current = null;
       setTutorBusy(false);
+      loadUsage();
     }
   }
   async function openCitation(citation: Citation) {
@@ -1099,7 +1112,10 @@ export function App() {
               {dailyUsage && (
                 <div className="mt-4">
                   <div className="flex items-center justify-between gap-3 text-sm text-blue-100">
-                    <span>AI points today</span>
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgb(110,231,183)]" />
+                      Live AI points
+                    </span>
                     <span className="font-semibold text-white">
                       {dailyUsage.remaining} of {dailyUsage.limit} remaining
                     </span>
