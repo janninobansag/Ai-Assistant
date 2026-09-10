@@ -11,11 +11,11 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 8% 0%, rgb(99 102 241 / 14%), transparent 25rem),
-    radial-gradient(circle at 100% 18%, rgb(14 165 233 / 10%), transparent 24rem), #f7f8fb;
+    radial-gradient(circle at 8% 0%, rgb(109 93 252 / 18%), transparent 25rem),
+    radial-gradient(circle at 100% 18%, rgb(20 184 166 / 13%), transparent 24rem), #f7f8fb;
 }
 ::selection {
-  background: rgb(66 99 235 / 25%);
+  background: rgb(109 93 252 / 25%);
 }
 html.dark {
   color-scheme: dark;
@@ -23,8 +23,8 @@ html.dark {
 }
 html.dark body {
   background:
-    radial-gradient(circle at 8% 0%, rgb(79 70 229 / 22%), transparent 25rem),
-    radial-gradient(circle at 100% 18%, rgb(14 116 144 / 14%), transparent 24rem), #0f172a;
+    radial-gradient(circle at 8% 0%, rgb(109 93 252 / 28%), transparent 25rem),
+    radial-gradient(circle at 100% 18%, rgb(13 148 136 / 16%), transparent 24rem), #0f172a;
   color: #e2e8f0;
 }
 html.dark .bg-white,
@@ -82,7 +82,7 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 3px solid rgb(66 99 235 / 45%);
+  outline: 3px solid rgb(109 93 252 / 45%);
   outline-offset: 2px;
 }
 button,
@@ -117,8 +117,8 @@ button {
   outline: none;
 }
 .field:focus {
-  border-color: #4263eb;
-  box-shadow: 0 0 0 3px rgb(66 99 235 / 15%);
+  border-color: #6d5dfc;
+  box-shadow: 0 0 0 3px rgb(109 93 252 / 18%);
 }
 .app-page {
   position: relative;
@@ -131,10 +131,10 @@ button {
   width: 9rem;
   height: 9rem;
   border-radius: 9999px;
-  background: rgb(66 99 235 / 12%);
+  background: rgb(109 93 252 / 16%);
   filter: blur(36px);
   content: "";
 }
 html.dark .app-page::before {
-  background: rgb(129 140 248 / 18%);
+  background: rgb(167 139 250 / 24%);
 }
