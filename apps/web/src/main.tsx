@@ -707,17 +707,17 @@ export function App() {
   }
   if (booting)
     return (
-      <main className="mx-auto flex min-h-screen max-w-lg items-center justify-center px-5">
+      <main className="app-page mx-auto flex min-h-screen max-w-lg items-center justify-center px-5">
         <p className="text-slate-500">Restoring your study session...</p>
       </main>
     );
   if (!user)
     return (
-      <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-5 py-10">
+      <main className="app-page mx-auto flex min-h-screen max-w-lg flex-col justify-center px-5 py-10 sm:py-16">
         <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
           Study assistant
         </span>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight">
+        <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
           Study smarter from your own notes.
         </h1>
         <p className="mt-3 text-slate-600">
@@ -725,7 +725,7 @@ export function App() {
         </p>
         <form
           onSubmit={authenticate}
-          className="mt-8 space-y-3 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
+          className="mt-8 space-y-3 rounded-3xl bg-white p-5 shadow-xl shadow-slate-200/60 ring-1 ring-slate-200 sm:p-6"
         >
           <h2 className="text-xl font-semibold">
             {mode === "register" ? "Create your account" : "Welcome back"}
@@ -775,13 +775,16 @@ export function App() {
       <a className="skip-link" href="#main-content">
         Skip to main content
       </a>
-      <main id="main-content" className="mx-auto min-h-screen max-w-lg px-5 pb-10 pt-10">
+      <main
+        id="main-content"
+        className="app-page mx-auto min-h-screen max-w-xl px-5 pb-12 pt-8 sm:px-7 sm:pt-12"
+      >
         <header className="flex items-start justify-between">
           <div>
             <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
               Study assistant
             </span>
-            <h1 className="mt-2 text-3xl font-bold">Hi, {user.displayName}</h1>
+            <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Hi, {user.displayName}</h1>
           </div>
           <button
             type="button"
@@ -1060,14 +1063,30 @@ export function App() {
             </button>
           </p>
         )}
-        <section className="mt-7 rounded-3xl bg-brand p-5 text-white">
+        <section className="mt-7 overflow-hidden rounded-3xl bg-brand p-5 text-white shadow-xl shadow-brand/20 sm:p-6">
           <p className="text-sm text-blue-100">Your study library</p>
           <p className="mt-1 text-3xl font-bold">{subjects.length} subjects</p>
           <p className="mt-1 text-blue-100">{materials.length} saved materials</p>
           {dailyUsage && (
-            <p className="mt-3 text-sm text-blue-100">
-              AI points today: {dailyUsage.remaining} of {dailyUsage.limit} remaining
-            </p>
+            <div className="mt-4">
+              <div className="flex items-center justify-between gap-3 text-sm text-blue-100">
+                <span>AI points today</span>
+                <span className="font-semibold text-white">
+                  {dailyUsage.remaining} of {dailyUsage.limit} remaining
+                </span>
+              </div>
+              <div
+                className="mt-2 h-2 overflow-hidden rounded-full bg-white/25"
+                aria-label={`${dailyUsage.remaining} of ${dailyUsage.limit} AI points remaining`}
+              >
+                <div
+                  className="h-full rounded-full bg-white transition-all"
+                  style={{
+                    width: `${dailyUsage.limit > 0 ? Math.max(0, Math.min(100, (dailyUsage.remaining / dailyUsage.limit) * 100)) : 0}%`
+                  }}
+                />
+              </div>
+            </div>
           )}
         </section>
         <section className="mt-6">
