@@ -120,6 +120,25 @@ button {
   border-color: #6d5dfc;
   box-shadow: 0 0 0 3px rgb(109 93 252 / 18%);
 }
+.rich-note-editor {
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+.rich-note-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+}
+.rich-note-editor h2 {
+  margin: 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.rich-note-editor ul {
+  margin: 0.5rem 0;
+  padding-left: 1.4rem;
+  list-style: disc;
+}
 .app-page {
   position: relative;
 }

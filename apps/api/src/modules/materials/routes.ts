@@ -14,6 +14,7 @@ const materialInput = z.object({
   subjectId: z.string().length(24),
   title: z.string().trim().min(1).max(120),
   text: z.string().trim().min(100).max(50000),
+  formattedText: z.string().max(200000).optional(),
   tags: z.array(z.string().trim().min(1).max(30)).max(10).default([])
 });
 const normalize = (text: string) =>
@@ -23,6 +24,27 @@ const normalize = (text: string) =>
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+const sanitizeFormattedText = (html: string) => {
+  const allowedTags = new Set([
+    "b",
+    "strong",
+    "i",
+    "em",
+    "u",
+    "h2",
+    "ul",
+    "ol",
+    "li",
+    "br",
+    "div",
+    "p"
+  ]);
+  return html.replace(/<\/?([a-z0-9]+)(?:\s[^>]*)?>/gi, (tag, name: string) => {
+    const normalized = name.toLowerCase();
+    if (!allowedTags.has(normalized)) return "";
+    return tag.startsWith("</") ? `</${normalized}>` : `<${normalized}>`;
+  });
+};
 router.use(requireAuth);
 router.get("/", async (req, res) => {
   const query: Record<string, unknown> = { userId: userId(req), archivedAt: { $exists: false } };
@@ -55,6 +77,9 @@ router.post("/", async (req, res) => {
     subjectId: parsed.data.subjectId,
     title: parsed.data.title,
     rawText: parsed.data.text,
+    formattedText: parsed.data.formattedText
+      ? sanitizeFormattedText(parsed.data.formattedText)
+      : "",
     normalizedText,
     contentHash: createHash("sha256").update(normalizedText).digest("hex"),
     tags: parsed.data.tags,
@@ -104,7 +129,7 @@ router.get("/:materialId/chunks/:chunkId", async (req, res) => {
 });
 router.patch("/:materialId", async (req, res) => {
   const parsed = materialInput
-    .pick({ title: true, text: true, tags: true })
+    .pick({ title: true, text: true, formattedText: true, tags: true })
     .partial()
     .safeParse(req.body);
   if (!parsed.success)
@@ -116,6 +141,8 @@ router.patch("/:materialId", async (req, res) => {
       }
     });
   const update: Record<string, unknown> = { ...parsed.data };
+  if (parsed.data.formattedText !== undefined)
+    update.formattedText = sanitizeFormattedText(parsed.data.formattedText);
   if (parsed.data.text) {
     update.rawText = parsed.data.text;
     update.normalizedText = normalize(parsed.data.text);
