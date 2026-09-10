@@ -1,5 +1,8 @@
 import { createHash } from "node:crypto";
 import { Router } from "express";
+import multer from "multer";
+import mammoth from "mammoth";
+import { PDFParse } from "pdf-parse";
 import { z } from "zod";
 import { Material } from "../../models/material.js";
 import { MaterialChunk } from "../../models/material-chunk.js";
@@ -10,6 +13,10 @@ import { Subject } from "../../models/subject.js";
 import { requireAuth, userId } from "../../middleware/auth.js";
 import { chunkMaterial } from "../../services/materials/chunking.js";
 const router = Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 }
+});
 const materialInput = z.object({
   subjectId: z.string().length(24),
   title: z.string().trim().min(1).max(120),
@@ -46,6 +53,66 @@ const sanitizeFormattedText = (html: string) => {
   });
 };
 router.use(requireAuth);
+router.post("/import", upload.single("file"), async (req, res) => {
+  const file = req.file;
+  if (!file)
+    return res.status(400).json({
+      error: { code: "VALIDATION_ERROR", message: "Choose a file to import.", requestId: null }
+    });
+  const extension = file.originalname.split(".").pop()?.toLowerCase();
+  if (!extension || !["pdf", "docx", "txt"].includes(extension))
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Only PDF, DOCX, and TXT files can be imported.",
+        requestId: null
+      }
+    });
+  try {
+    let text = "";
+    if (extension === "pdf") {
+      const parser = new PDFParse({ data: file.buffer });
+      try {
+        text = (await parser.getText()).text;
+      } finally {
+        await parser.destroy();
+      }
+    } else if (extension === "docx") {
+      text = (await mammoth.extractRawText({ buffer: file.buffer })).value;
+    } else {
+      text = file.buffer.toString("utf8");
+    }
+    const normalizedText = normalize(text);
+    if (!normalizedText)
+      return res.status(422).json({
+        error: {
+          code: "UNPROCESSABLE_FILE",
+          message: "No readable text was found in this file.",
+          requestId: null
+        }
+      });
+    if (normalizedText.length > 50_000)
+      return res.status(422).json({
+        error: {
+          code: "FILE_TOO_LARGE",
+          message: "This file contains more than 50,000 characters. Import a shorter document.",
+          requestId: null
+        }
+      });
+    return res.json({
+      data: { text: normalizedText, fileName: file.originalname },
+      meta: { requestId: null }
+    });
+  } catch {
+    return res.status(422).json({
+      error: {
+        code: "UNPROCESSABLE_FILE",
+        message: "This file could not be read. Try another PDF, DOCX, or TXT file.",
+        requestId: null
+      }
+    });
+  }
+});
 router.get("/", async (req, res) => {
   const query: Record<string, unknown> = { userId: userId(req), archivedAt: { $exists: false } };
   if (typeof req.query.subjectId === "string") query.subjectId = req.query.subjectId;

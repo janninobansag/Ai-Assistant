@@ -48,7 +48,14 @@ html.dark .bg-red-50 {
 html.dark .border-slate-200,
 html.dark .border-slate-300,
 html.dark .field {
-  border-color: #475569 !important;
+  border-color: #334155 !important;
+}
+html.dark .ring-slate-200 {
+  --tw-ring-color: rgb(51 65 85 / 72%) !important;
+}
+html.dark .shadow-sm,
+html.dark .shadow-xl {
+  box-shadow: 0 10px 28px rgb(2 6 23 / 28%) !important;
 }
 html.dark .text-slate-950,
 html.dark .text-slate-900,
