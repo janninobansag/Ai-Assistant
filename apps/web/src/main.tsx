@@ -107,6 +107,7 @@ export function App() {
   const [removingAttemptId, setRemovingAttemptId] = useState("");
   const [savingAnswers, setSavingAnswers] = useState(false);
   const [removingMaterialId, setRemovingMaterialId] = useState("");
+  const [openMaterialMenuId, setOpenMaterialMenuId] = useState("");
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [tutorQuestion, setTutorQuestion] = useState("");
   const [tutorBusy, setTutorBusy] = useState(false);
@@ -987,35 +988,108 @@ export function App() {
             )}
             {visibleMaterials.map((material) => (
               <div key={material._id} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-semibold">{material.title}</p>
-                  <button
-                    onClick={() => void summarize(material._id)}
-                    className="rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white"
-                  >
-                    Summarize
-                  </button>
-                  <button
-                    onClick={() => void makeQuiz(material._id)}
-                    className="ml-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
-                  >
-                    Quiz
-                  </button>
-                  <button
-                    onClick={() => void openTutor(material)}
-                    className="ml-2 rounded-xl border border-brand px-3 py-2 text-sm font-semibold text-brand"
-                  >
-                    Ask tutor
-                  </button>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{material.title}</p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {material.characterCount.toLocaleString()} characters
+                    </p>
+                  </div>
+                  <div className="hidden shrink-0 items-center gap-2 sm:flex">
+                    <button
+                      onClick={() => void summarize(material._id)}
+                      className="rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white"
+                    >
+                      Summarize
+                    </button>
+                    <button
+                      onClick={() => void makeQuiz(material._id)}
+                      className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white"
+                    >
+                      Quiz
+                    </button>
+                    <button
+                      onClick={() => void openTutor(material)}
+                      className="rounded-xl border border-brand px-3 py-2 text-sm font-semibold text-brand"
+                    >
+                      Ask tutor
+                    </button>
+                  </div>
+                  <div className="relative shrink-0 sm:hidden">
+                    <button
+                      type="button"
+                      aria-label={`Actions for ${material.title}`}
+                      aria-expanded={openMaterialMenuId === material._id}
+                      aria-haspopup="menu"
+                      onClick={() =>
+                        setOpenMaterialMenuId((openId) =>
+                          openId === material._id ? "" : material._id
+                        )
+                      }
+                      className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-xl font-bold leading-none text-slate-700"
+                    >
+                      <span aria-hidden="true">⋮</span>
+                    </button>
+                    {openMaterialMenuId === material._id && (
+                      <div
+                        role="menu"
+                        aria-label={`Actions for ${material.title}`}
+                        className="absolute right-0 top-12 z-20 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+                      >
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setOpenMaterialMenuId("");
+                            void summarize(material._id);
+                          }}
+                          className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-brand hover:bg-slate-50"
+                        >
+                          Summarize
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setOpenMaterialMenuId("");
+                            void makeQuiz(material._id);
+                          }}
+                          className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                        >
+                          Create quiz
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setOpenMaterialMenuId("");
+                            void openTutor(material);
+                          }}
+                          className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                        >
+                          Ask tutor
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          disabled={removingMaterialId === material._id}
+                          onClick={() => {
+                            setOpenMaterialMenuId("");
+                            void removeMaterial(material);
+                          }}
+                          className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {removingMaterialId === material._id ? "Removing…" : "Remove material"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <p className="mt-1 text-sm text-slate-500">
-                  {material.characterCount.toLocaleString()} characters
-                </p>
                 <button
                   type="button"
                   disabled={removingMaterialId === material._id}
                   onClick={() => void removeMaterial(material)}
-                  className="mt-3 text-sm font-semibold text-red-700 disabled:opacity-50"
+                  className="mt-3 hidden text-sm font-semibold text-red-700 disabled:opacity-50 sm:block"
                 >
                   {removingMaterialId === material._id ? "Removing…" : "Remove material"}
                 </button>
