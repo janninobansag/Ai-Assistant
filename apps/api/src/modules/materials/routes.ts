@@ -89,8 +89,18 @@ router.get("/:materialId/chunks/:chunkId", async (req, res) => {
     userId: userId(req)
   }).select("materialId ordinal heading text");
   return chunk
-    ? res.json({ data: { id: chunk.id, materialId: String(chunk.materialId), label: chunk.heading || `Section ${chunk.ordinal + 1}`, text: chunk.text }, meta: { requestId: null } })
-    : res.status(404).json({ error: { code: "NOT_FOUND", message: "Source excerpt not found.", requestId: null } });
+    ? res.json({
+        data: {
+          id: chunk.id,
+          materialId: String(chunk.materialId),
+          label: chunk.heading || `Section ${chunk.ordinal + 1}`,
+          text: chunk.text
+        },
+        meta: { requestId: null }
+      })
+    : res.status(404).json({
+        error: { code: "NOT_FOUND", message: "Source excerpt not found.", requestId: null }
+      });
 });
 router.patch("/:materialId", async (req, res) => {
   const parsed = materialInput

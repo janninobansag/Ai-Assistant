@@ -196,25 +196,73 @@ router.patch("/me", requireAuth, async (req, res) => {
 router.get("/me/export", requireAuth, async (req, res) => {
   const owner = userId(req);
   const account = await User.findById(owner).lean();
-  if (!account) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Account not found.", requestId: null } });
-  const [subjects, materials, chunks, summaries, quizzes, attempts, conversations, messages] = await Promise.all([
-    Subject.find({ userId: owner }).lean(), Material.find({ userId: owner }).lean(), MaterialChunk.find({ userId: owner }).lean(),
-    Summary.find({ userId: owner }).lean(), Quiz.find({ userId: owner }).lean(), QuizAttempt.find({ userId: owner }).lean(),
-    Conversation.find({ userId: owner }).lean(), Message.find({ userId: owner }).lean()
-  ]);
-  res.setHeader("Content-Disposition", `attachment; filename="study-assistant-export-${new Date().toISOString().slice(0, 10)}.json"`);
-  return res.json({ data: { exportedAt: new Date().toISOString(), account: { id: String(account._id), email: account.email, displayName: account.displayName, preferences: account.preferences, createdAt: account.createdAt }, subjects, materials, chunks, summaries, quizzes, attempts, conversations, messages }, meta: { requestId: null } });
+  if (!account)
+    return res
+      .status(404)
+      .json({ error: { code: "NOT_FOUND", message: "Account not found.", requestId: null } });
+  const [subjects, materials, chunks, summaries, quizzes, attempts, conversations, messages] =
+    await Promise.all([
+      Subject.find({ userId: owner }).lean(),
+      Material.find({ userId: owner }).lean(),
+      MaterialChunk.find({ userId: owner }).lean(),
+      Summary.find({ userId: owner }).lean(),
+      Quiz.find({ userId: owner }).lean(),
+      QuizAttempt.find({ userId: owner }).lean(),
+      Conversation.find({ userId: owner }).lean(),
+      Message.find({ userId: owner }).lean()
+    ]);
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="study-assistant-export-${new Date().toISOString().slice(0, 10)}.json"`
+  );
+  return res.json({
+    data: {
+      exportedAt: new Date().toISOString(),
+      account: {
+        id: String(account._id),
+        email: account.email,
+        displayName: account.displayName,
+        preferences: account.preferences,
+        createdAt: account.createdAt
+      },
+      subjects,
+      materials,
+      chunks,
+      summaries,
+      quizzes,
+      attempts,
+      conversations,
+      messages
+    },
+    meta: { requestId: null }
+  });
 });
 router.delete("/me", requireAuth, async (req, res) => {
   const parsed = deleteAccountInput.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Enter your password to delete the account.", requestId: null } });
+  if (!parsed.success)
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Enter your password to delete the account.",
+        requestId: null
+      }
+    });
   const owner = userId(req);
   const account = await User.findById(owner);
-  if (!account || !(await verifyPassword(parsed.data.password, account.passwordHash))) return res.status(401).json({ error: { code: "UNAUTHENTICATED", message: "Password is incorrect.", requestId: null } });
+  if (!account || !(await verifyPassword(parsed.data.password, account.passwordHash)))
+    return res.status(401).json({
+      error: { code: "UNAUTHENTICATED", message: "Password is incorrect.", requestId: null }
+    });
   await Promise.all([
-    RefreshSession.deleteMany({ userId: owner }), Subject.deleteMany({ userId: owner }), Material.deleteMany({ userId: owner }),
-    MaterialChunk.deleteMany({ userId: owner }), Summary.deleteMany({ userId: owner }), Quiz.deleteMany({ userId: owner }),
-    QuizAttempt.deleteMany({ userId: owner }), Conversation.deleteMany({ userId: owner }), Message.deleteMany({ userId: owner }),
+    RefreshSession.deleteMany({ userId: owner }),
+    Subject.deleteMany({ userId: owner }),
+    Material.deleteMany({ userId: owner }),
+    MaterialChunk.deleteMany({ userId: owner }),
+    Summary.deleteMany({ userId: owner }),
+    Quiz.deleteMany({ userId: owner }),
+    QuizAttempt.deleteMany({ userId: owner }),
+    Conversation.deleteMany({ userId: owner }),
+    Message.deleteMany({ userId: owner }),
     UsageDaily.deleteMany({ userId: owner })
   ]);
   await User.deleteOne({ _id: owner });

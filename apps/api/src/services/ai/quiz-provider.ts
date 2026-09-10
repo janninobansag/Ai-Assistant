@@ -33,7 +33,11 @@ ${text.slice(0, 45_000)}
 ---`;
 }
 
-async function geminiQuiz(text: string, count: number, difficulty: Difficulty): Promise<QuizOutput> {
+async function geminiQuiz(
+  text: string,
+  count: number,
+  difficulty: Difficulty
+): Promise<QuizOutput> {
   if (!env.GEMINI_API_KEY) throw new Error("Hosted AI is not configured.");
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.HOSTED_AI_MODEL)}:generateContent`;
   const response = await hostedFetch(url, {

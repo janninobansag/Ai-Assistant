@@ -27,7 +27,10 @@ app.use(
 );
 app.use(collectMetrics);
 app.use("/api", rateLimit({ name: "api", windowMs: 60_000, max: env.API_RATE_LIMIT_PER_MINUTE }));
-app.use("/api/v1/auth", rateLimit({ name: "auth", windowMs: 15 * 60_000, max: env.AUTH_RATE_LIMIT_PER_15_MINUTES }));
+app.use(
+  "/api/v1/auth",
+  rateLimit({ name: "auth", windowMs: 15 * 60_000, max: env.AUTH_RATE_LIMIT_PER_15_MINUTES })
+);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/subjects", subjectRoutes);
 app.use("/api/v1/materials", materialRoutes);
@@ -49,7 +52,10 @@ app.get("/api/v1/health/ready", (_req, res) => {
   });
 });
 app.get("/api/v1/health/metrics", (_req, res) =>
-  res.json({ data: { ...metricsSnapshot(), database: isDatabaseReady() ? "connected" : "disconnected" }, meta: { requestId: null } })
+  res.json({
+    data: { ...metricsSnapshot(), database: isDatabaseReady() ? "connected" : "disconnected" },
+    meta: { requestId: null }
+  })
 );
 app.use("/api/v1", usageRoutes);
 app.get("/api/v1/dev/fake-summary", async (req, res) => {

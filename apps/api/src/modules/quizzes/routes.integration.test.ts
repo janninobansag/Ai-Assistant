@@ -32,9 +32,27 @@ describe("quiz attempts", () => {
       difficulty: "mixed",
       questionCount: 3,
       questions: [
-        { prompt: "Q1", options: ["a", "b", "c", "d"], correctIndex: 0, explanation: "E1", concept: "Cells" },
-        { prompt: "Q2", options: ["a", "b", "c", "d"], correctIndex: 1, explanation: "E2", concept: "Cells" },
-        { prompt: "Q3", options: ["a", "b", "c", "d"], correctIndex: 2, explanation: "E3", concept: "Genes" }
+        {
+          prompt: "Q1",
+          options: ["a", "b", "c", "d"],
+          correctIndex: 0,
+          explanation: "E1",
+          concept: "Cells"
+        },
+        {
+          prompt: "Q2",
+          options: ["a", "b", "c", "d"],
+          correctIndex: 1,
+          explanation: "E2",
+          concept: "Cells"
+        },
+        {
+          prompt: "Q3",
+          options: ["a", "b", "c", "d"],
+          correctIndex: 2,
+          explanation: "E3",
+          concept: "Genes"
+        }
       ]
     });
     quizId = quiz.id;

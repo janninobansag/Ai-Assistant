@@ -20,4 +20,7 @@ export const collectMetrics: RequestHandler = (req, res, next) => {
   next();
 };
 
-export const metricsSnapshot = () => ({ uptimeSeconds: Math.floor((Date.now() - startedAt) / 1_000), requests: Object.fromEntries(requests) });
+export const metricsSnapshot = () => ({
+  uptimeSeconds: Math.floor((Date.now() - startedAt) / 1_000),
+  requests: Object.fromEntries(requests)
+});
