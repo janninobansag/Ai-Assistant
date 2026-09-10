@@ -6,6 +6,12 @@
   color: #17212b;
   background: #f7f8fb;
 }
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
 body {
   margin: 0;
   min-width: 320px;
@@ -105,18 +111,22 @@ button {
     border-color 150ms ease;
 }
 .clean-scrollbar {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: rgb(148 163 184 / 72%) transparent;
 }
 .clean-scrollbar::-webkit-scrollbar {
-  width: 0.6rem;
+  width: 0.35rem;
+  height: 0;
 }
 .clean-scrollbar::-webkit-scrollbar-track {
-  margin-block: 0.75rem;
+  margin-block: 1.25rem;
   background: transparent;
 }
 .clean-scrollbar::-webkit-scrollbar-thumb {
-  border: 0.16rem solid transparent;
+  border: 0.06rem solid transparent;
   border-radius: 999px;
   background: rgb(148 163 184 / 68%);
   background-clip: padding-box;
