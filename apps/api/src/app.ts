@@ -31,12 +31,6 @@ app.use(
   "/api/v1/auth",
   rateLimit({ name: "auth", windowMs: 15 * 60_000, max: env.AUTH_RATE_LIMIT_PER_15_MINUTES })
 );
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/subjects", subjectRoutes);
-app.use("/api/v1/materials", materialRoutes);
-app.use("/api/v1", summaryRoutes);
-app.use("/api/v1", quizRoutes);
-app.use("/api/v1", conversationRoutes);
 app.get("/api/v1/health/live", (_req, res) =>
   res.json({ data: { status: "ok" }, meta: { requestId: null } })
 );
@@ -57,6 +51,12 @@ app.get("/api/v1/health/metrics", (_req, res) =>
     meta: { requestId: null }
   })
 );
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/subjects", subjectRoutes);
+app.use("/api/v1/materials", materialRoutes);
+app.use("/api/v1", summaryRoutes);
+app.use("/api/v1", quizRoutes);
+app.use("/api/v1", conversationRoutes);
 app.use("/api/v1", usageRoutes);
 app.get("/api/v1/dev/fake-summary", async (req, res) => {
   if (env.NODE_ENV === "production") return res.status(404).end();
