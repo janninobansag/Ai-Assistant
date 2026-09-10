@@ -1808,8 +1808,10 @@ export function App() {
             {visibleMaterials.map((material) => (
               <div key={material._id} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{material.title}</p>
+                  <div className="min-w-0 flex-1">
+                    <p title={material.title} className="truncate font-semibold">
+                      {material.title}
+                    </p>
                     <p className="mt-1 text-sm text-slate-500">
                       {material.characterCount.toLocaleString()} characters
                     </p>
