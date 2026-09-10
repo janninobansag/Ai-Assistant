@@ -5,8 +5,9 @@ import { connectDatabase, disconnectDatabase } from "./config/database.js";
 async function start(): Promise<void> {
   try {
     await connectDatabase();
-    const server = app.listen(env.API_PORT, () =>
-      console.log(`Study API listening on http://localhost:${env.API_PORT}`)
+    const port = env.PORT ?? env.API_PORT;
+    const server = app.listen(port, "0.0.0.0", () =>
+      console.log(`Study API listening on http://localhost:${port}`)
     );
     const shutdown = async (signal: string) => {
       console.log(`${signal} received; shutting down`);

@@ -13,6 +13,7 @@ import quizRoutes from "./modules/quizzes/routes.js";
 import conversationRoutes from "./modules/conversations/routes.js";
 import usageRoutes from "./modules/usage/routes.js";
 import { rateLimit } from "./middleware/rate-limit.js";
+import { collectMetrics, metricsSnapshot } from "./middleware/metrics.js";
 const pinoMiddleware = pinoHttp as unknown as (options?: object) => RequestHandler;
 export const app = express();
 export const fakeProvider = new FakeProvider();
@@ -24,6 +25,7 @@ app.use(
     redact: ["req.headers.authorization", "req.headers.cookie", "res.headers.set-cookie"]
   })
 );
+app.use(collectMetrics);
 app.use("/api", rateLimit({ name: "api", windowMs: 60_000, max: env.API_RATE_LIMIT_PER_MINUTE }));
 app.use("/api/v1/auth", rateLimit({ name: "auth", windowMs: 15 * 60_000, max: env.AUTH_RATE_LIMIT_PER_15_MINUTES }));
 app.use("/api/v1/auth", authRoutes);
@@ -47,6 +49,9 @@ app.get("/api/v1/health/ready", (_req, res) => {
     meta: { requestId: null }
   });
 });
+app.get("/api/v1/health/metrics", (_req, res) =>
+  res.json({ data: { ...metricsSnapshot(), database: isDatabaseReady() ? "connected" : "disconnected" }, meta: { requestId: null } })
+);
 app.get("/api/v1/dev/fake-summary", async (req, res) => {
   if (env.NODE_ENV === "production") return res.status(404).end();
   const text =

@@ -10,6 +10,25 @@ body {
   margin: 0;
   min-width: 320px;
 }
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  transform: translateY(-150%);
+  border-radius: 0.75rem;
+  background: #17212b;
+  padding: 0.75rem 1rem;
+  color: #fff;
+}
+.skip-link:focus { transform: translateY(0); }
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgb(66 99 235 / 45%);
+  outline-offset: 2px;
+}
 button,
 input,
 textarea {

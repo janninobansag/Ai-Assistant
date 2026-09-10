@@ -98,6 +98,8 @@ export function App() {
   const [tutorBusy, setTutorBusy] = useState(false);
   const [sourceExcerpt, setSourceExcerpt] = useState<SourceExcerpt | null>(null);
   const tutorAbort = useRef<AbortController | null>(null);
+  const settingsDialog = useRef<HTMLElement | null>(null);
+  const privacyDialog = useRef<HTMLElement | null>(null);
   const visibleMaterials = selectedSubject
     ? materials.filter((material) => material.subjectId === selectedSubject)
     : materials;
@@ -110,6 +112,19 @@ export function App() {
       })
       .catch(() => undefined)
       .finally(() => setBooting(false));
+  }, []);
+  useEffect(() => {
+    const dialog = settingsOpen ? settingsDialog.current : privacyOpen ? privacyDialog.current : null;
+    dialog?.focus();
+  }, [settingsOpen, privacyOpen]);
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setSettingsOpen(false);
+      setPrivacyOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
   }, []);
   useEffect(() => {
     const onInstallPrompt = (event: Event) => { event.preventDefault(); setInstallPrompt(event as BeforeInstallPromptEvent); };
@@ -309,6 +324,7 @@ export function App() {
       setError((e as Error).message);
     } finally {
       setSummaryLoading(false);
+      loadUsage();
     }
   }
   async function makeQuiz(materialId: string) {
@@ -331,7 +347,7 @@ export function App() {
       );
     } catch (e) {
       setError((e as Error).message);
-    }
+    } finally { loadUsage(); }
   }
   async function submitQuiz() {
     if (!quiz || !attempt) return;
@@ -516,7 +532,9 @@ export function App() {
       </main>
     );
   return (
-    <main className="mx-auto min-h-screen max-w-lg px-5 pb-10 pt-10">
+    <>
+    <a className="skip-link" href="#main-content">Skip to main content</a>
+    <main id="main-content" className="mx-auto min-h-screen max-w-lg px-5 pb-10 pt-10">
       <header className="flex items-start justify-between">
         <div>
           <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
@@ -528,7 +546,7 @@ export function App() {
       </header>
       {settingsOpen && (
         <div role="presentation" onMouseDown={() => setSettingsOpen(false)} className="fixed inset-0 z-50 flex items-end bg-slate-950/30 p-4 sm:items-center sm:justify-center">
-          <section role="dialog" aria-modal="true" aria-labelledby="settings-title" onMouseDown={(event) => event.stopPropagation()} className="w-full max-w-md rounded-3xl bg-white p-5 shadow-xl">
+          <section ref={settingsDialog} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="settings-title" onMouseDown={(event) => event.stopPropagation()} className="w-full max-w-md rounded-3xl bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div><h2 id="settings-title" className="text-xl font-bold">Settings</h2><p className="mt-1 text-sm text-slate-500">Manage this device and your account.</p></div>
               <button type="button" aria-label="Close settings" onClick={() => setSettingsOpen(false)} className="grid h-11 w-11 place-items-center rounded-2xl text-xl text-slate-500">×</button>
@@ -546,7 +564,7 @@ export function App() {
       )}
       {privacyOpen && (
         <div role="presentation" onMouseDown={() => setPrivacyOpen(false)} className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/30 p-4 sm:flex sm:items-center sm:justify-center">
-          <section role="dialog" aria-modal="true" aria-labelledby="privacy-title" onMouseDown={(event) => event.stopPropagation()} className="mx-auto my-8 w-full max-w-md rounded-3xl bg-white p-5 shadow-xl">
+          <section ref={privacyDialog} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="privacy-title" onMouseDown={(event) => event.stopPropagation()} className="mx-auto my-8 w-full max-w-md rounded-3xl bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between gap-4"><div><h2 id="privacy-title" className="text-xl font-bold">Privacy &amp; AI use</h2><p className="mt-1 text-sm text-slate-500">How Study Assistant handles your study data.</p></div><button type="button" aria-label="Close privacy information" onClick={() => setPrivacyOpen(false)} className="grid h-11 w-11 place-items-center rounded-2xl text-xl text-slate-500">×</button></div>
             <div className="mt-5 space-y-4 text-sm leading-6 text-slate-700">
               <section><h3 className="font-semibold text-slate-950">What we store</h3><p>Your account details, subjects, study materials, generated summaries and quizzes, practice history, and tutor conversations are stored so you can return to them.</p></section>
@@ -573,7 +591,9 @@ export function App() {
       <section className="mt-6">
         <h2 className="text-xl font-semibold">Subjects</h2>
         <form onSubmit={createSubject} className="mt-3 flex gap-2">
+          <label className="sr-only" htmlFor="subject-name">New subject name</label>
           <input
+            id="subject-name"
             required
             value={subjectName}
             onChange={(e) => setSubjectName(e.target.value)}
@@ -605,7 +625,9 @@ export function App() {
           Choose a subject, then paste at least 100 characters of notes.
         </p>
         <form onSubmit={createMaterial} className="mt-4 space-y-3">
+          <label className="sr-only" htmlFor="material-subject">Subject</label>
           <select
+            id="material-subject"
             required
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
@@ -618,14 +640,18 @@ export function App() {
               </option>
             ))}
           </select>
+          <label className="sr-only" htmlFor="material-title">Material title</label>
           <input
+            id="material-title"
             required
             value={materialTitle}
             onChange={(e) => setMaterialTitle(e.target.value)}
             placeholder="Material title"
             className="field"
           />
+          <label className="sr-only" htmlFor="material-text">Study notes</label>
           <textarea
+            id="material-text"
             required
             minLength={100}
             value={materialText}
@@ -872,6 +898,7 @@ export function App() {
         </div>
       </section>
     </main>
+    </>
   );
 }
 const root = document.getElementById("root");

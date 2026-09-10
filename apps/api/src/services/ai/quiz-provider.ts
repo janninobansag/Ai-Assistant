@@ -1,6 +1,7 @@
 import type { Difficulty } from "@study/shared";
 import { env } from "../../config/env.js";
 import type { QuizOutput } from "./quiz-schema.js";
+import { hostedFetch } from "./circuit-breaker.js";
 
 function quizPrompt(text: string, count: number, difficulty: Difficulty) {
   return `Create exactly ${count} ${difficulty}-difficulty multiple-choice study questions using only the supplied study material.
@@ -35,7 +36,7 @@ ${text.slice(0, 45_000)}
 async function geminiQuiz(text: string, count: number, difficulty: Difficulty): Promise<QuizOutput> {
   if (!env.GEMINI_API_KEY) throw new Error("Hosted AI is not configured.");
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.HOSTED_AI_MODEL)}:generateContent`;
-  const response = await fetch(url, {
+  const response = await hostedFetch(url, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
     body: JSON.stringify({
@@ -44,7 +45,6 @@ async function geminiQuiz(text: string, count: number, difficulty: Difficulty): 
     }),
     signal: AbortSignal.timeout(30_000)
   });
-  if (!response.ok) throw new Error(`Hosted AI request failed (${response.status}).`);
   const body = (await response.json()) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };

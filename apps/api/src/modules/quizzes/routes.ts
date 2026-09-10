@@ -5,6 +5,7 @@ import { requireAuth, userId } from "../../middleware/auth.js";
 import { Material } from "../../models/material.js";
 import { Quiz } from "../../models/quiz.js";
 import { QuizAttempt } from "../../models/quiz-attempt.js";
+import { UsageDaily } from "../../models/usage-daily.js";
 import { generateQuiz } from "../../services/ai/quiz-provider.js";
 import { quizOutputSchema } from "../../services/ai/quiz-schema.js";
 import { scoreQuiz } from "../../services/quizzes/scoring.js";
@@ -97,6 +98,16 @@ router.post("/materials/:materialId/quizzes", async (req, res) => {
     if (cached)
       return res.json({ data: publicQuiz(cached), meta: { cached: true, requestId: null } });
   }
+  const dateKey = new Date().toISOString().slice(0, 10);
+  const cost = 4;
+  const usage = await UsageDaily.findOne({ userId: owner, dateKey });
+  if ((usage?.pointsUsed ?? 0) + cost > env.DAILY_POINTS_LIMIT)
+    return res.status(429).json({ error: { code: "AI_QUOTA_EXCEEDED", message: "Daily AI limit reached.", requestId: null } });
+  await UsageDaily.findOneAndUpdate(
+    { userId: owner, dateKey },
+    { $setOnInsert: { userId: owner, dateKey }, $inc: { pointsUsed: cost, operations: 1 } },
+    { upsert: true }
+  );
   try {
     const output = quizOutputSchema.parse(
       await generateQuiz(material.normalizedText, parsed.data.questionCount, parsed.data.difficulty)
@@ -110,6 +121,7 @@ router.post("/materials/:materialId/quizzes", async (req, res) => {
       .status(201)
       .json({ data: publicQuiz(quiz), meta: { cached: false, requestId: null } });
   } catch (error) {
+    await UsageDaily.updateOne({ userId: owner, dateKey }, { $inc: { pointsUsed: -cost, operations: -1 } });
     const message = error instanceof Error ? error.message : "Quiz generation failed.";
     const code = message.includes("not configured")
       ? "AI_PROVIDER_UNAVAILABLE"
