@@ -1273,7 +1273,7 @@ export function App() {
               aria-modal="true"
               aria-labelledby="settings-title"
               onMouseDown={(event) => event.stopPropagation()}
-              className="w-full max-w-md rounded-3xl bg-white p-5 shadow-xl"
+              className="clean-scrollbar max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-3xl bg-white p-5 pr-3 shadow-xl sm:max-h-[min(86dvh,46rem)]"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -1375,7 +1375,7 @@ export function App() {
                     {adminLoading ? (
                       <p className="mt-3 text-sm text-slate-500">Loading users…</p>
                     ) : (
-                      <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
+                      <div className="clean-scrollbar mt-3 max-h-72 space-y-2 overflow-y-auto overscroll-contain pr-2">
                         {adminUsers.map((account) => (
                           <article key={account.id} className="rounded-xl bg-slate-50 p-3">
                             <p className="break-all text-sm font-semibold text-slate-900">

@@ -104,6 +104,32 @@ button {
     background-color 150ms ease,
     border-color 150ms ease;
 }
+.clean-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(109 93 252 / 55%) transparent;
+}
+.clean-scrollbar::-webkit-scrollbar {
+  width: 0.6rem;
+}
+.clean-scrollbar::-webkit-scrollbar-track {
+  margin-block: 0.75rem;
+  background: transparent;
+}
+.clean-scrollbar::-webkit-scrollbar-thumb {
+  border: 0.16rem solid transparent;
+  border-radius: 999px;
+  background: rgb(109 93 252 / 50%);
+  background-clip: padding-box;
+}
+.clean-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(109 93 252 / 78%);
+}
+html.dark .clean-scrollbar {
+  scrollbar-color: rgb(167 139 250 / 65%) transparent;
+}
+html.dark .clean-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgb(167 139 250 / 60%);
+}
 @media (hover: hover) {
   button:not(:disabled):hover {
     transform: translateY(-1px);
