@@ -14,6 +14,8 @@ import { QuizAttempt } from "../../models/quiz-attempt.js";
 import { Conversation } from "../../models/conversation.js";
 import { Message } from "../../models/message.js";
 import { UsageDaily } from "../../models/usage-daily.js";
+import { permanentlyDeleteAccount } from "../../services/accounts/delete-account-data.js";
+import { adminEmails } from "../../config/env.js";
 
 const router = Router();
 const credentials = z.object({
@@ -35,7 +37,8 @@ const publicUser = (u: any) => ({
   id: u._id.toString(),
   email: u.email,
   displayName: u.displayName,
-  preferences: u.preferences
+  preferences: u.preferences,
+  isAdmin: adminEmails.has(u.email.toLowerCase())
 });
 const issueRefreshSession = async (userId: string) => {
   const token = createToken(userId, "refresh");
@@ -253,19 +256,7 @@ router.delete("/me", requireAuth, async (req, res) => {
     return res.status(401).json({
       error: { code: "UNAUTHENTICATED", message: "Password is incorrect.", requestId: null }
     });
-  await Promise.all([
-    RefreshSession.deleteMany({ userId: owner }),
-    Subject.deleteMany({ userId: owner }),
-    Material.deleteMany({ userId: owner }),
-    MaterialChunk.deleteMany({ userId: owner }),
-    Summary.deleteMany({ userId: owner }),
-    Quiz.deleteMany({ userId: owner }),
-    QuizAttempt.deleteMany({ userId: owner }),
-    Conversation.deleteMany({ userId: owner }),
-    Message.deleteMany({ userId: owner }),
-    UsageDaily.deleteMany({ userId: owner })
-  ]);
-  await User.deleteOne({ _id: owner });
+  await permanentlyDeleteAccount(owner);
   res.setHeader("Set-Cookie", cookie("refreshToken", "", 0));
   return res.status(204).end();
 });
