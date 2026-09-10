@@ -777,7 +777,7 @@ export function App() {
       </a>
       <main
         id="main-content"
-        className="app-page mx-auto min-h-screen max-w-xl px-5 pb-12 pt-8 sm:px-7 sm:pt-12"
+        className="app-page mx-auto min-h-screen max-w-7xl px-5 pb-12 pt-8 sm:px-7 sm:pt-12 lg:px-10"
       >
         <header className="flex items-start justify-between">
           <div>
@@ -1063,119 +1063,125 @@ export function App() {
             </button>
           </p>
         )}
-        <section className="mt-7 overflow-hidden rounded-3xl bg-brand p-5 text-white shadow-xl shadow-brand/20 sm:p-6">
-          <p className="text-sm text-blue-100">Your study library</p>
-          <p className="mt-1 text-3xl font-bold">{subjects.length} subjects</p>
-          <p className="mt-1 text-blue-100">{materials.length} saved materials</p>
-          {dailyUsage && (
-            <div className="mt-4">
-              <div className="flex items-center justify-between gap-3 text-sm text-blue-100">
-                <span>AI points today</span>
-                <span className="font-semibold text-white">
-                  {dailyUsage.remaining} of {dailyUsage.limit} remaining
-                </span>
-              </div>
-              <div
-                className="mt-2 h-2 overflow-hidden rounded-full bg-white/25"
-                aria-label={`${dailyUsage.remaining} of ${dailyUsage.limit} AI points remaining`}
-              >
-                <div
-                  className="h-full rounded-full bg-white transition-all"
-                  style={{
-                    width: `${dailyUsage.limit > 0 ? Math.max(0, Math.min(100, (dailyUsage.remaining / dailyUsage.limit) * 100)) : 0}%`
-                  }}
+        <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
+          <div className="space-y-6">
+            <section className="overflow-hidden rounded-3xl bg-brand p-5 text-white shadow-xl shadow-brand/20 sm:p-6">
+              <p className="text-sm text-blue-100">Your study library</p>
+              <p className="mt-1 text-3xl font-bold">{subjects.length} subjects</p>
+              <p className="mt-1 text-blue-100">{materials.length} saved materials</p>
+              {dailyUsage && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between gap-3 text-sm text-blue-100">
+                    <span>AI points today</span>
+                    <span className="font-semibold text-white">
+                      {dailyUsage.remaining} of {dailyUsage.limit} remaining
+                    </span>
+                  </div>
+                  <div
+                    className="mt-2 h-2 overflow-hidden rounded-full bg-white/25"
+                    aria-label={`${dailyUsage.remaining} of ${dailyUsage.limit} AI points remaining`}
+                  >
+                    <div
+                      className="h-full rounded-full bg-white transition-all"
+                      style={{
+                        width: `${dailyUsage.limit > 0 ? Math.max(0, Math.min(100, (dailyUsage.remaining / dailyUsage.limit) * 100)) : 0}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </section>
+            <section>
+              <h2 className="text-xl font-semibold">Subjects</h2>
+              <form onSubmit={createSubject} className="mt-3 flex gap-2">
+                <label className="sr-only" htmlFor="subject-name">
+                  New subject name
+                </label>
+                <input
+                  id="subject-name"
+                  required
+                  value={subjectName}
+                  onChange={(e) => setSubjectName(e.target.value)}
+                  placeholder="New subject name"
+                  className="field flex-1"
                 />
+                <button className="rounded-2xl bg-slate-900 px-4 font-semibold text-white">
+                  Add
+                </button>
+              </form>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                {subjects.length === 0 && (
+                  <p className="col-span-2 rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+                    No subjects yet. Add your first subject above.
+                  </p>
+                )}
+                {subjects.map((subject) => (
+                  <button
+                    key={subject._id}
+                    onClick={() => setSelectedSubject(subject._id)}
+                    className={`rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-slate-200 ${selectedSubject === subject._id ? "ring-2 ring-brand" : ""}`}
+                  >
+                    <span className="font-semibold">{subject.name}</span>
+                  </button>
+                ))}
               </div>
-            </div>
-          )}
-        </section>
-        <section className="mt-6">
-          <h2 className="text-xl font-semibold">Subjects</h2>
-          <form onSubmit={createSubject} className="mt-3 flex gap-2">
-            <label className="sr-only" htmlFor="subject-name">
-              New subject name
-            </label>
-            <input
-              id="subject-name"
-              required
-              value={subjectName}
-              onChange={(e) => setSubjectName(e.target.value)}
-              placeholder="New subject name"
-              className="field flex-1"
-            />
-            <button className="rounded-2xl bg-slate-900 px-4 font-semibold text-white">Add</button>
-          </form>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            {subjects.length === 0 && (
-              <p className="col-span-2 rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-                No subjects yet. Add your first subject above.
-              </p>
-            )}
-            {subjects.map((subject) => (
-              <button
-                key={subject._id}
-                onClick={() => setSelectedSubject(subject._id)}
-                className={`rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-slate-200 ${selectedSubject === subject._id ? "ring-2 ring-brand" : ""}`}
-              >
-                <span className="font-semibold">{subject.name}</span>
-              </button>
-            ))}
+            </section>
           </div>
-        </section>
-        <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <h2 className="text-xl font-semibold">Add study material</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Choose a subject, then paste at least 100 characters of notes.
-          </p>
-          <form onSubmit={createMaterial} className="mt-4 space-y-3">
-            <label className="sr-only" htmlFor="material-subject">
-              Subject
-            </label>
-            <select
-              id="material-subject"
-              required
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="field"
-            >
-              <option value="">Choose a subject</option>
-              {subjects.map((subject) => (
-                <option key={subject._id} value={subject._id}>
-                  {subject.name}
-                </option>
-              ))}
-            </select>
-            <label className="sr-only" htmlFor="material-title">
-              Material title
-            </label>
-            <input
-              id="material-title"
-              required
-              value={materialTitle}
-              onChange={(e) => setMaterialTitle(e.target.value)}
-              placeholder="Material title"
-              className="field"
-            />
-            <label className="sr-only" htmlFor="material-text">
-              Study notes
-            </label>
-            <textarea
-              id="material-text"
-              required
-              minLength={100}
-              value={materialText}
-              onChange={(e) => setMaterialText(e.target.value)}
-              placeholder="Paste your lecture notes here..."
-              rows={7}
-              className="field resize-none"
-            />
-            <button className="w-full rounded-2xl bg-brand px-5 py-4 font-semibold text-white">
-              Save material
-            </button>
-          </form>
-        </section>
+          <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+            <h2 className="text-xl font-semibold">Add study material</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Choose a subject, then paste at least 100 characters of notes.
+            </p>
+            <form onSubmit={createMaterial} className="mt-4 space-y-3">
+              <label className="sr-only" htmlFor="material-subject">
+                Subject
+              </label>
+              <select
+                id="material-subject"
+                required
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                className="field"
+              >
+                <option value="">Choose a subject</option>
+                {subjects.map((subject) => (
+                  <option key={subject._id} value={subject._id}>
+                    {subject.name}
+                  </option>
+                ))}
+              </select>
+              <label className="sr-only" htmlFor="material-title">
+                Material title
+              </label>
+              <input
+                id="material-title"
+                required
+                value={materialTitle}
+                onChange={(e) => setMaterialTitle(e.target.value)}
+                placeholder="Material title"
+                className="field"
+              />
+              <label className="sr-only" htmlFor="material-text">
+                Study notes
+              </label>
+              <textarea
+                id="material-text"
+                required
+                minLength={100}
+                value={materialText}
+                onChange={(e) => setMaterialText(e.target.value)}
+                placeholder="Paste your lecture notes here..."
+                rows={7}
+                className="field resize-none"
+              />
+              <button className="w-full rounded-2xl bg-brand px-5 py-4 font-semibold text-white">
+                Save material
+              </button>
+            </form>
+          </section>
+        </div>
         {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-        <section className="mt-8">
+        <section className="mt-10">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">
               {selectedSubject
@@ -1192,7 +1198,7 @@ export function App() {
               </button>
             )}
           </div>
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {visibleMaterials.length === 0 && (
               <p className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
                 {selectedSubject
@@ -1284,7 +1290,7 @@ export function App() {
           </div>
         </section>
         {summary && (
-          <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Summary</h2>
               <div className="flex items-center gap-3">
@@ -1319,7 +1325,7 @@ export function App() {
           </section>
         )}
         {quiz && attempt && (
-          <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-xl font-semibold">{quiz.title}</h2>
               <button
@@ -1426,7 +1432,7 @@ export function App() {
           </section>
         )}
         {conversation && (
-          <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold">{conversation.title}</h2>
@@ -1521,7 +1527,7 @@ export function App() {
         )}
         <section className="mt-8">
           <h2 className="text-xl font-semibold">Practice history</h2>
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {history.length === 0 ? (
               <p className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
                 Complete a quiz to see your progress here.
