@@ -140,6 +140,15 @@ router.patch("/:materialId", async (req, res) => {
         subjectId: found.subjectId
       }))
     );
+    const quizzes = await Quiz.find({ materialId: found.id, userId: userId(req) })
+      .select("_id")
+      .lean();
+    await Summary.deleteMany({ materialId: found.id, userId: userId(req) });
+    await QuizAttempt.deleteMany({
+      quizId: { $in: quizzes.map((quiz) => quiz._id) },
+      userId: userId(req)
+    });
+    await Quiz.deleteMany({ materialId: found.id, userId: userId(req) });
   }
   return found
     ? res.json({ data: found, meta: { requestId: null } })

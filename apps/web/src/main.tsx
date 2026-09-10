@@ -17,6 +17,7 @@ type User = {
 };
 type Subject = { _id: string; name: string };
 type Material = { _id: string; subjectId: string; title: string; characterCount: number };
+type MaterialDetail = Material & { rawText: string };
 type Summary = {
   materialId?: string;
   overview: string;
@@ -130,6 +131,10 @@ export function App() {
   const [removingAttemptId, setRemovingAttemptId] = useState("");
   const [savingAnswers, setSavingAnswers] = useState(false);
   const [removingMaterialId, setRemovingMaterialId] = useState("");
+  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const [editMaterialTitle, setEditMaterialTitle] = useState("");
+  const [editMaterialText, setEditMaterialText] = useState("");
+  const [savingMaterialEdit, setSavingMaterialEdit] = useState(false);
   const [openMaterialMenuId, setOpenMaterialMenuId] = useState("");
   const [openHistoryMenuId, setOpenHistoryMenuId] = useState("");
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -490,6 +495,48 @@ export function App() {
       setError((e as Error).message);
     } finally {
       setRemovingMaterialId("");
+    }
+  }
+  async function openMaterialEditor(material: Material) {
+    setError("");
+    try {
+      const detail = await request<MaterialDetail>(`/materials/${material._id}`, {}, token);
+      setEditingMaterial(material);
+      setEditMaterialTitle(detail.title);
+      setEditMaterialText(detail.rawText);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function saveMaterialEdit(event: FormEvent) {
+    event.preventDefault();
+    if (!editingMaterial) return;
+    setSavingMaterialEdit(true);
+    setError("");
+    try {
+      const updated = await request<Material>(
+        `/materials/${editingMaterial._id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ title: editMaterialTitle, text: editMaterialText })
+        },
+        token
+      );
+      setMaterials((items) =>
+        items.map((material) => (material._id === updated._id ? updated : material))
+      );
+      if (summary?.materialId === updated._id) setSummary(null);
+      if (quiz?.materialId === updated._id) {
+        setQuiz(null);
+        setAttempt(null);
+        setAnswers({});
+      }
+      if (conversation?.materialIds.includes(updated._id)) setConversation(null);
+      setEditingMaterial(null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSavingMaterialEdit(false);
     }
   }
   async function summarize(materialId: string) {
@@ -1258,80 +1305,171 @@ export function App() {
                       {material.characterCount.toLocaleString()} characters
                     </p>
                   </div>
-                  <div className="relative shrink-0">
+                  <div className="flex shrink-0 items-center gap-2">
                     <button
                       type="button"
-                      aria-label={`Actions for ${material.title}`}
-                      aria-expanded={openMaterialMenuId === material._id}
-                      aria-haspopup="menu"
-                      onClick={() =>
-                        setOpenMaterialMenuId((openId) =>
-                          openId === material._id ? "" : material._id
-                        )
-                      }
-                      className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-xl font-bold leading-none text-slate-700"
+                      aria-label={`Edit ${material.title}`}
+                      onClick={() => void openMaterialEditor(material)}
+                      className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-lg font-semibold text-brand"
                     >
-                      <span aria-hidden="true">⋮</span>
+                      <span aria-hidden="true">✎</span>
                     </button>
-                    {openMaterialMenuId === material._id && (
-                      <div
-                        role="menu"
+                    <div className="relative">
+                      <button
+                        type="button"
                         aria-label={`Actions for ${material.title}`}
-                        className="absolute right-0 top-12 z-20 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+                        aria-expanded={openMaterialMenuId === material._id}
+                        aria-haspopup="menu"
+                        onClick={() =>
+                          setOpenMaterialMenuId((openId) =>
+                            openId === material._id ? "" : material._id
+                          )
+                        }
+                        className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 text-xl font-bold leading-none text-slate-700"
                       >
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setOpenMaterialMenuId("");
-                            void summarize(material._id);
-                          }}
-                          className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-brand hover:bg-slate-50"
+                        <span aria-hidden="true">⋮</span>
+                      </button>
+                      {openMaterialMenuId === material._id && (
+                        <div
+                          role="menu"
+                          aria-label={`Actions for ${material.title}`}
+                          className="absolute right-0 top-12 z-20 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
                         >
-                          Summarize
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setOpenMaterialMenuId("");
-                            void makeQuiz(material._id);
-                          }}
-                          className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                        >
-                          Create quiz
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setOpenMaterialMenuId("");
-                            void openTutor(material);
-                          }}
-                          className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                        >
-                          Ask tutor
-                        </button>
-                        <button
-                          type="button"
-                          role="menuitem"
-                          disabled={removingMaterialId === material._id}
-                          onClick={() => {
-                            setOpenMaterialMenuId("");
-                            void removeMaterial(material);
-                          }}
-                          className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
-                        >
-                          {removingMaterialId === material._id ? "Removing…" : "Remove material"}
-                        </button>
-                      </div>
-                    )}
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setOpenMaterialMenuId("");
+                              void summarize(material._id);
+                            }}
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-brand hover:bg-slate-50"
+                          >
+                            Summarize
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setOpenMaterialMenuId("");
+                              void makeQuiz(material._id);
+                            }}
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                          >
+                            Create quiz
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setOpenMaterialMenuId("");
+                              void openTutor(material);
+                            }}
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                          >
+                            Ask tutor
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            disabled={removingMaterialId === material._id}
+                            onClick={() => {
+                              setOpenMaterialMenuId("");
+                              void removeMaterial(material);
+                            }}
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            {removingMaterialId === material._id ? "Removing…" : "Remove material"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         </section>
+        {editingMaterial && (
+          <div
+            role="presentation"
+            onMouseDown={() => !savingMaterialEdit && setEditingMaterial(null)}
+            className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/40 p-4 sm:flex sm:items-center sm:justify-center"
+          >
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-material-title"
+              onMouseDown={(event) => event.stopPropagation()}
+              className="mx-auto my-8 w-full max-w-2xl rounded-3xl bg-white p-5 shadow-xl sm:p-6"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 id="edit-material-title" className="text-xl font-bold">
+                    Edit study material
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Add or revise your notes, then save your changes.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close material editor"
+                  disabled={savingMaterialEdit}
+                  onClick={() => setEditingMaterial(null)}
+                  className="grid h-11 w-11 place-items-center rounded-2xl text-xl text-slate-500 disabled:opacity-50"
+                >
+                  ×
+                </button>
+              </div>
+              <form onSubmit={saveMaterialEdit} className="mt-5 space-y-3">
+                <label className="sr-only" htmlFor="edit-material-title-input">
+                  Material title
+                </label>
+                <input
+                  id="edit-material-title-input"
+                  required
+                  maxLength={120}
+                  value={editMaterialTitle}
+                  onChange={(event) => setEditMaterialTitle(event.target.value)}
+                  className="field"
+                />
+                <label className="sr-only" htmlFor="edit-material-text">
+                  Study notes
+                </label>
+                <textarea
+                  id="edit-material-text"
+                  required
+                  minLength={100}
+                  maxLength={50000}
+                  rows={13}
+                  value={editMaterialText}
+                  onChange={(event) => setEditMaterialText(event.target.value)}
+                  className="field resize-y"
+                />
+                <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
+                  Saving changed notes removes older summaries, quizzes, and attempts for this
+                  material. You can generate fresh ones afterward.
+                </p>
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    disabled={savingMaterialEdit}
+                    onClick={() => setEditingMaterial(null)}
+                    className="rounded-2xl border border-slate-200 px-5 py-3 font-semibold text-slate-700 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    disabled={savingMaterialEdit || editMaterialText.trim().length < 100}
+                    className="rounded-2xl bg-brand px-5 py-3 font-semibold text-white disabled:opacity-50"
+                  >
+                    {savingMaterialEdit ? "Saving…" : "Save changes"}
+                  </button>
+                </div>
+              </form>
+            </section>
+          </div>
+        )}
         {summary && (
           <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
             <div className="flex items-center justify-between">
