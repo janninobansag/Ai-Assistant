@@ -34,7 +34,6 @@ app.use("/api/v1/materials", materialRoutes);
 app.use("/api/v1", summaryRoutes);
 app.use("/api/v1", quizRoutes);
 app.use("/api/v1", conversationRoutes);
-app.use("/api/v1", usageRoutes);
 app.get("/api/v1/health/live", (_req, res) =>
   res.json({ data: { status: "ok" }, meta: { requestId: null } })
 );
@@ -52,6 +51,7 @@ app.get("/api/v1/health/ready", (_req, res) => {
 app.get("/api/v1/health/metrics", (_req, res) =>
   res.json({ data: { ...metricsSnapshot(), database: isDatabaseReady() ? "connected" : "disconnected" }, meta: { requestId: null } })
 );
+app.use("/api/v1", usageRoutes);
 app.get("/api/v1/dev/fake-summary", async (req, res) => {
   if (env.NODE_ENV === "production") return res.status(404).end();
   const text =
