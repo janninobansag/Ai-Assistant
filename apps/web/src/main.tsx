@@ -1,4 +1,12 @@
-import { type FormEvent, type RefObject, StrictMode, useEffect, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  type FormEvent,
+  type RefObject,
+  StrictMode,
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 
@@ -89,7 +97,7 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
     ...options,
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers
     }
@@ -133,6 +141,7 @@ export function App() {
   const [materialTitle, setMaterialTitle] = useState("");
   const [materialText, setMaterialText] = useState("");
   const [materialFormattedText, setMaterialFormattedText] = useState("");
+  const [importingDocument, setImportingDocument] = useState<"new" | "edit" | "">("");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -548,6 +557,49 @@ export function App() {
       if (materialTextInput.current) materialTextInput.current.innerHTML = "";
     } catch (e) {
       setError((e as Error).message);
+    }
+  }
+  async function importDocument(event: ChangeEvent<HTMLInputElement>, destination: "new" | "edit") {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImportingDocument(destination);
+    setError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const imported = await request<{ text: string; fileName: string }>(
+        "/materials/import",
+        { method: "POST", body: formData },
+        token
+      );
+      const existingText = destination === "new" ? materialText : editMaterialText;
+      const existingFormatted =
+        destination === "new" ? materialFormattedText : editMaterialFormattedText;
+      const nextText = existingText.trim()
+        ? `${existingText.trim()}\n\n${imported.text}`
+        : imported.text;
+      if (nextText.length > 50_000) {
+        setError("The imported text would make this note longer than 50,000 characters.");
+        return;
+      }
+      const nextFormatted = existingFormatted.trim()
+        ? `${existingFormatted}<br><br>${plainTextToHtml(imported.text)}`
+        : plainTextToHtml(imported.text);
+      if (destination === "new") {
+        setMaterialText(nextText);
+        setMaterialFormattedText(nextFormatted);
+        if (!materialTitle.trim()) setMaterialTitle(imported.fileName.replace(/\.[^.]+$/, ""));
+        if (materialTextInput.current) materialTextInput.current.innerHTML = nextFormatted;
+      } else {
+        setEditMaterialText(nextText);
+        setEditMaterialFormattedText(nextFormatted);
+        if (editMaterialTextInput.current) editMaterialTextInput.current.innerHTML = nextFormatted;
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setImportingDocument("");
+      event.target.value = "";
     }
   }
   async function removeMaterial(material: Material) {
@@ -1663,6 +1715,34 @@ export function App() {
                 setText={setMaterialText}
                 setFormattedText={setMaterialFormattedText}
               />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <input
+                  id="new-material-import"
+                  type="file"
+                  accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                  onChange={(event) => void importDocument(event, "new")}
+                  className="sr-only"
+                />
+                <label
+                  htmlFor="new-material-import"
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-brand hover:text-brand"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-4 w-4"
+                  >
+                    <path d="M12 16V4" />
+                    <path d="m7 9 5-5 5 5" />
+                    <path d="M5 20h14" />
+                  </svg>
+                  {importingDocument === "new" ? "Importing…" : "Import document"}
+                </label>
+                <span className="text-xs text-slate-500">PDF, DOCX, or TXT · up to 5 MB</span>
+              </div>
               <div
                 id="material-text"
                 ref={materialTextInput}
@@ -1864,6 +1944,34 @@ export function App() {
                   setText={setEditMaterialText}
                   setFormattedText={setEditMaterialFormattedText}
                 />
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <input
+                    id="edit-material-import"
+                    type="file"
+                    accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                    onChange={(event) => void importDocument(event, "edit")}
+                    className="sr-only"
+                  />
+                  <label
+                    htmlFor="edit-material-import"
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-brand hover:text-brand"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-4 w-4"
+                    >
+                      <path d="M12 16V4" />
+                      <path d="m7 9 5-5 5 5" />
+                      <path d="M5 20h14" />
+                    </svg>
+                    {importingDocument === "edit" ? "Importing…" : "Import document"}
+                  </label>
+                  <span className="text-xs text-slate-500">PDF, DOCX, or TXT · up to 5 MB</span>
+                </div>
                 <div
                   id="edit-material-text"
                   ref={editMaterialTextInput}
