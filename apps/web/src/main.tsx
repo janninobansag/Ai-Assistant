@@ -1,4 +1,4 @@
-import { type FormEvent, StrictMode, useEffect, useRef, useState } from "react";
+import { type FormEvent, type RefObject, StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 
@@ -75,6 +75,7 @@ type AdminUser = {
   createdAt: string;
   updatedAt: string;
 };
+type NoteFormat = "bold" | "italic" | "heading" | "bullet";
 function recommendedQuestionCount(characterCount: number): 5 | 10 | 15 {
   if (characterCount >= 7_500) return 15;
   if (characterCount >= 2_500) return 10;
@@ -143,12 +144,15 @@ export function App() {
   const [editMaterialText, setEditMaterialText] = useState("");
   const [savingMaterialEdit, setSavingMaterialEdit] = useState(false);
   const [openMaterialMenuId, setOpenMaterialMenuId] = useState("");
+  const [openSubjectMenuId, setOpenSubjectMenuId] = useState("");
   const [openHistoryMenuId, setOpenHistoryMenuId] = useState("");
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [tutorQuestion, setTutorQuestion] = useState("");
   const [tutorBusy, setTutorBusy] = useState(false);
   const [sourceExcerpt, setSourceExcerpt] = useState<SourceExcerpt | null>(null);
   const tutorAbort = useRef<AbortController | null>(null);
+  const materialTextInput = useRef<HTMLTextAreaElement | null>(null);
+  const editMaterialTextInput = useRef<HTMLTextAreaElement | null>(null);
   const searchDialog = useRef<HTMLElement | null>(null);
   const settingsDialog = useRef<HTMLElement | null>(null);
   const privacyDialog = useRef<HTMLElement | null>(null);
@@ -470,6 +474,49 @@ export function App() {
       setError((e as Error).message);
     }
   }
+  async function renameSubject(subject: Subject) {
+    const name = window.prompt("Rename subject", subject.name)?.trim();
+    if (!name || name === subject.name) return;
+    try {
+      const updated = await request<Subject>(
+        `/subjects/${subject._id}`,
+        { method: "PATCH", body: JSON.stringify({ name }) },
+        token
+      );
+      setSubjects((items) => items.map((item) => (item._id === updated._id ? updated : item)));
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+  async function removeSubject(subject: Subject) {
+    const ownedMaterials = materials.filter((material) => material.subjectId === subject._id);
+    if (
+      !window.confirm(
+        `Remove “${subject.name}” permanently? ${ownedMaterials.length} related material${ownedMaterials.length === 1 ? "" : "s"}, summaries, quizzes, practice history, and tutor conversations will also be deleted.`
+      )
+    )
+      return;
+    try {
+      await request<void>(`/subjects/${subject._id}`, { method: "DELETE" }, token);
+      const removedMaterialIds = new Set(ownedMaterials.map((material) => material._id));
+      setSubjects((items) => items.filter((item) => item._id !== subject._id));
+      setMaterials((items) => items.filter((item) => item.subjectId !== subject._id));
+      setHistory((items) =>
+        items.filter((item) => !removedMaterialIds.has(item.quiz.materialId ?? ""))
+      );
+      if (selectedSubject === subject._id) setSelectedSubject("");
+      if (summary && removedMaterialIds.has(summary.materialId ?? "")) setSummary(null);
+      if (quiz && removedMaterialIds.has(quiz.materialId)) {
+        setQuiz(null);
+        setAttempt(null);
+        setAnswers({});
+      }
+      if (conversation?.materialIds.some((materialId) => removedMaterialIds.has(materialId)))
+        setConversation(null);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
   async function createMaterial(event: FormEvent) {
     event.preventDefault();
     try {
@@ -558,6 +605,90 @@ export function App() {
     } finally {
       setSavingMaterialEdit(false);
     }
+  }
+  function formatNote(
+    input: RefObject<HTMLTextAreaElement | null>,
+    value: string,
+    setValue: (nextValue: string) => void,
+    format: NoteFormat
+  ) {
+    const textarea = input.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = value.slice(start, end) || "text";
+    let nextValue = value;
+    let selectionStart = start;
+    let selectionEnd = end;
+    if (format === "bold" || format === "italic") {
+      const marker = format === "bold" ? "**" : "_";
+      nextValue = `${value.slice(0, start)}${marker}${selected}${marker}${value.slice(end)}`;
+      selectionStart = start + marker.length;
+      selectionEnd = selectionStart + selected.length;
+    }
+    if (format === "heading") {
+      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+      nextValue = `${value.slice(0, lineStart)}## ${value.slice(lineStart)}`;
+      selectionStart = start + 3;
+      selectionEnd = end + 3;
+    }
+    if (format === "bullet") {
+      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+      const lineEnd = value.indexOf("\n", end);
+      const blockEnd = lineEnd === -1 ? value.length : lineEnd;
+      const block = value.slice(lineStart, blockEnd);
+      const formatted = `- ${block.replace(/\n/g, "\n- ")}`;
+      nextValue = `${value.slice(0, lineStart)}${formatted}${value.slice(blockEnd)}`;
+      selectionStart = lineStart;
+      selectionEnd = lineStart + formatted.length;
+    }
+    setValue(nextValue);
+    window.requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(selectionStart, selectionEnd);
+    });
+  }
+  function NoteToolbar({
+    input,
+    value,
+    setValue
+  }: {
+    input: RefObject<HTMLTextAreaElement | null>;
+    value: string;
+    setValue: (nextValue: string) => void;
+  }) {
+    const buttons: Array<{
+      format: NoteFormat;
+      label: string;
+      symbol: string;
+      className?: string;
+    }> = [
+      { format: "bold", label: "Bold selected text", symbol: "B", className: "font-bold" },
+      { format: "italic", label: "Italicize selected text", symbol: "I", className: "italic" },
+      { format: "heading", label: "Add heading", symbol: "H", className: "font-bold" },
+      { format: "bullet", label: "Make a bullet list", symbol: "•≡", className: "text-base" }
+    ];
+    return (
+      <div
+        role="toolbar"
+        aria-label="Note formatting"
+        className="flex flex-wrap items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-2"
+      >
+        {buttons.map((button) => (
+          <button
+            key={button.format}
+            type="button"
+            aria-label={button.label}
+            title={button.label}
+            onClick={() => formatNote(input, value, setValue, button.format)}
+            className={`grid h-9 min-w-9 place-items-center rounded-lg px-2 text-sm text-slate-700 hover:bg-white hover:text-brand ${button.className ?? ""}`}
+          >
+            <span aria-hidden="true">{button.symbol}</span>
+          </button>
+        ))}
+        <span className="ml-1 text-xs text-slate-500">Select text, then choose a format.</span>
+      </div>
+    );
   }
   async function summarize(materialId: string) {
     setSummaryLoading(true);
@@ -916,7 +1047,17 @@ export function App() {
                   onClick={() => setSearchOpen(true)}
                   className="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200/70 bg-white/65 text-xl text-slate-700 shadow-sm backdrop-blur-sm"
                 >
-                  <span aria-hidden="true">&#128269;</span>
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-5 w-5"
+                  >
+                    <circle cx="11" cy="11" r="6" />
+                    <path d="m16 16 4 4" />
+                  </svg>
                 </button>
                 <button
                   type="button"
@@ -925,7 +1066,17 @@ export function App() {
                   onClick={() => setSettingsOpen(true)}
                   className="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200/70 bg-white/65 text-xl text-slate-700 shadow-sm backdrop-blur-sm"
                 >
-                  ⚙
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-5 w-5"
+                  >
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V20.3h-3v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7.08 15a1.7 1.7 0 0 0-1.55-1H5.4v-3h.13a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06L8.8 5.94l.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1-1.55V4.7h3v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.55 1h.13v3h-.13a1.7 1.7 0 0 0-1.55 1Z" />
+                  </svg>
                 </button>
               </div>
             </header>
@@ -1404,13 +1555,73 @@ export function App() {
                   </p>
                 )}
                 {subjects.map((subject) => (
-                  <button
+                  <div
                     key={subject._id}
-                    onClick={() => setSelectedSubject(subject._id)}
-                    className={`rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-slate-200 ${selectedSubject === subject._id ? "ring-2 ring-brand" : ""}`}
+                    className={`relative rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 ${selectedSubject === subject._id ? "ring-2 ring-brand" : ""}`}
                   >
-                    <span className="font-semibold">{subject.name}</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSubject(subject._id)}
+                      className="w-full rounded-2xl p-4 pr-12 text-left"
+                    >
+                      <span className="block truncate font-semibold">{subject.name}</span>
+                    </button>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                      <button
+                        type="button"
+                        aria-label={`Actions for ${subject.name}`}
+                        aria-expanded={openSubjectMenuId === subject._id}
+                        aria-haspopup="menu"
+                        onClick={() =>
+                          setOpenSubjectMenuId((openId) =>
+                            openId === subject._id ? "" : subject._id
+                          )
+                        }
+                        className="grid h-9 w-9 place-items-center rounded-xl text-slate-600 hover:bg-slate-100"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="h-5 w-5"
+                        >
+                          <circle cx="12" cy="5" r="1.5" />
+                          <circle cx="12" cy="12" r="1.5" />
+                          <circle cx="12" cy="19" r="1.5" />
+                        </svg>
+                      </button>
+                      {openSubjectMenuId === subject._id && (
+                        <div
+                          role="menu"
+                          aria-label={`Actions for ${subject.name}`}
+                          className="absolute right-0 top-11 z-20 w-36 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+                        >
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setOpenSubjectMenuId("");
+                              void renameSubject(subject);
+                            }}
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-50"
+                          >
+                            Rename
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              setOpenSubjectMenuId("");
+                              void removeSubject(subject);
+                            }}
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-700 hover:bg-red-50"
+                          >
+                            Remove subject
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             </section>
@@ -1452,8 +1663,14 @@ export function App() {
               <label className="sr-only" htmlFor="material-text">
                 Study notes
               </label>
+              <NoteToolbar
+                input={materialTextInput}
+                value={materialText}
+                setValue={setMaterialText}
+              />
               <textarea
                 id="material-text"
+                ref={materialTextInput}
                 required
                 minLength={100}
                 value={materialText}
@@ -1634,8 +1851,14 @@ export function App() {
                 <label className="sr-only" htmlFor="edit-material-text">
                   Study notes
                 </label>
+                <NoteToolbar
+                  input={editMaterialTextInput}
+                  value={editMaterialText}
+                  setValue={setEditMaterialText}
+                />
                 <textarea
                   id="edit-material-text"
+                  ref={editMaterialTextInput}
                   required
                   minLength={100}
                   maxLength={50000}
