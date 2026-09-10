@@ -875,35 +875,35 @@ export function App() {
       </a>
       <main
         id="main-content"
-        className="app-page mx-auto min-h-screen max-w-7xl px-5 pb-12 pt-8 sm:px-7 sm:pt-12 lg:px-10"
+        className="app-page mx-auto min-h-screen max-w-7xl px-5 pb-12 pt-0 sm:px-7 sm:pt-0 lg:px-10"
       >
-        <header className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <img
-                src="/learnloop-logo.png"
-                alt=""
-                aria-hidden="true"
-                className="h-10 w-10 rounded-2xl object-contain shadow-sm"
-              />
-              <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
-                Study assistant
-              </span>
-            </div>
-          </div>
-          <button
-            type="button"
-            aria-label="Open settings"
-            aria-expanded={settingsOpen}
-            onClick={() => setSettingsOpen(true)}
-            className="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200 bg-white text-xl text-slate-700 shadow-sm"
-          >
-            ⚙
-          </button>
-        </header>
-        <section className="hero-banner relative left-1/2 mt-7 w-screen -translate-x-1/2 overflow-hidden px-5 py-10 sm:px-7 sm:py-14 lg:px-10 lg:py-16">
+        <section className="hero-banner relative left-1/2 w-screen -translate-x-1/2 overflow-hidden px-5 pb-10 pt-8 sm:px-7 sm:pb-14 sm:pt-12 lg:px-10 lg:pb-16">
           <div className="mx-auto max-w-7xl">
-            <div className="relative z-10 max-w-2xl">
+            <header className="relative z-10 flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <img
+                    src="/learnloop-logo.png"
+                    alt=""
+                    aria-hidden="true"
+                    className="h-10 w-10 rounded-2xl object-contain shadow-sm"
+                  />
+                  <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
+                    Study assistant
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="Open settings"
+                aria-expanded={settingsOpen}
+                onClick={() => setSettingsOpen(true)}
+                className="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200/70 bg-white/65 text-xl text-slate-700 shadow-sm backdrop-blur-sm"
+              >
+                ⚙
+              </button>
+            </header>
+            <div className="relative z-10 mt-16 max-w-2xl sm:mt-20 lg:mt-24">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
                 Your personal study space
               </p>
