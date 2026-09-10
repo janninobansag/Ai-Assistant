@@ -106,7 +106,7 @@ button {
 }
 .clean-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgb(109 93 252 / 55%) transparent;
+  scrollbar-color: rgb(148 163 184 / 72%) transparent;
 }
 .clean-scrollbar::-webkit-scrollbar {
   width: 0.6rem;
@@ -118,17 +118,17 @@ button {
 .clean-scrollbar::-webkit-scrollbar-thumb {
   border: 0.16rem solid transparent;
   border-radius: 999px;
-  background: rgb(109 93 252 / 50%);
+  background: rgb(148 163 184 / 68%);
   background-clip: padding-box;
 }
 .clean-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(109 93 252 / 78%);
+  background-color: rgb(100 116 139 / 85%);
 }
 html.dark .clean-scrollbar {
-  scrollbar-color: rgb(167 139 250 / 65%) transparent;
+  scrollbar-color: rgb(100 116 139 / 85%) transparent;
 }
 html.dark .clean-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgb(167 139 250 / 60%);
+  background-color: rgb(100 116 139 / 80%);
 }
 @media (hover: hover) {
   button:not(:disabled):hover {
