@@ -360,6 +360,27 @@ router.get("/practice/history", async (req, res) => {
     meta: { requestId: null }
   });
 });
+router.get("/practice/history/:attemptId", async (req, res) => {
+  const owner = userId(req);
+  const attempt = await QuizAttempt.findOne({
+    _id: req.params.attemptId,
+    userId: owner,
+    status: "submitted"
+  }).lean();
+  if (!attempt)
+    return res.status(404).json({
+      error: { code: "NOT_FOUND", message: "Completed attempt not found.", requestId: null }
+    });
+  const quiz = await Quiz.findOne({ _id: attempt.quizId, userId: owner }).lean();
+  if (!quiz)
+    return res.status(404).json({
+      error: { code: "NOT_FOUND", message: "Quiz not found.", requestId: null }
+    });
+  return res.json({
+    data: { quiz: publicQuiz(quiz), attempt: resultFor(attempt, quiz) },
+    meta: { requestId: null }
+  });
+});
 router.delete("/practice/history/:attemptId", async (req, res) => {
   const deleted = await QuizAttempt.findOneAndDelete({
     _id: req.params.attemptId,
