@@ -1644,19 +1644,19 @@ export function App() {
                   </option>
                 ))}
               </select>
-              <label className="sr-only" htmlFor="material-title">
-                Material title
+              <label className="text-sm font-semibold text-slate-800" htmlFor="material-title">
+                Title
               </label>
               <input
                 id="material-title"
                 required
                 value={materialTitle}
                 onChange={(e) => setMaterialTitle(e.target.value)}
-                placeholder="Material title"
+                placeholder="Give your note a title"
                 className="field"
               />
-              <label className="sr-only" htmlFor="material-text">
-                Study notes
+              <label className="text-sm font-semibold text-slate-800" htmlFor="material-text">
+                Note
               </label>
               <NoteToolbar
                 input={materialTextInput}
@@ -1671,12 +1671,12 @@ export function App() {
                 role="textbox"
                 aria-multiline="true"
                 aria-label="Study notes"
-                data-placeholder="Paste your lecture notes here..."
+                data-placeholder="Start writing your note..."
                 onInput={(event) => {
                   setMaterialText(event.currentTarget.innerText);
                   setMaterialFormattedText(event.currentTarget.innerHTML);
                 }}
-                className="rich-note-editor field min-h-56"
+                className="rich-note-editor field h-72"
               />
               <button
                 disabled={materialText.trim().length < 100 || materialText.length > 50000}
@@ -1839,8 +1839,11 @@ export function App() {
                 </button>
               </div>
               <form onSubmit={saveMaterialEdit} className="mt-5 space-y-3">
-                <label className="sr-only" htmlFor="edit-material-title-input">
-                  Material title
+                <label
+                  className="text-sm font-semibold text-slate-800"
+                  htmlFor="edit-material-title-input"
+                >
+                  Title
                 </label>
                 <input
                   id="edit-material-title-input"
@@ -1850,8 +1853,11 @@ export function App() {
                   onChange={(event) => setEditMaterialTitle(event.target.value)}
                   className="field"
                 />
-                <label className="sr-only" htmlFor="edit-material-text">
-                  Study notes
+                <label
+                  className="text-sm font-semibold text-slate-800"
+                  htmlFor="edit-material-text"
+                >
+                  Note
                 </label>
                 <NoteToolbar
                   input={editMaterialTextInput}
@@ -1870,7 +1876,7 @@ export function App() {
                     setEditMaterialText(event.currentTarget.innerText);
                     setEditMaterialFormattedText(event.currentTarget.innerHTML);
                   }}
-                  className="rich-note-editor field min-h-[20rem]"
+                  className="rich-note-editor field h-72"
                 />
                 <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
                   Saving changed notes removes older summaries, quizzes, and attempts for this
