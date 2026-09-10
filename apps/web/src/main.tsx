@@ -803,69 +803,82 @@ export function App() {
     );
   if (!user)
     return (
-      <main className="app-page mx-auto flex min-h-screen max-w-lg flex-col justify-center px-5 py-10 sm:py-16">
-        <div className="flex items-center gap-3">
-          <img
-            src="/learnloop-logo.png"
-            alt=""
-            aria-hidden="true"
-            className="h-11 w-11 rounded-2xl object-contain shadow-sm"
-          />
-          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
-            Study assistant
-          </span>
-        </div>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-          Study smarter from your own notes.
-        </h1>
-        <p className="mt-3 text-slate-600">
-          Create a private library for summaries, quizzes, and tutor conversations.
-        </p>
-        <form
-          onSubmit={authenticate}
-          className="mt-8 space-y-3 rounded-3xl bg-white p-5 shadow-xl shadow-slate-200/60 ring-1 ring-slate-200 sm:p-6"
-        >
-          <h2 className="text-xl font-semibold">
-            {mode === "register" ? "Create your account" : "Welcome back"}
-          </h2>
-          {mode === "register" && (
+      <main className="app-page min-h-screen px-5 py-6 sm:px-7 sm:py-10 lg:px-10">
+        <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-7xl items-center gap-7 lg:grid-cols-[minmax(0,1.2fr)_minmax(23rem,0.8fr)] lg:gap-12">
+          <section className="hero-panel overflow-hidden rounded-[2rem] p-7 shadow-xl shadow-brand/10 sm:p-10 lg:min-h-[38rem] lg:p-14">
+            <div className="relative z-10 flex items-center gap-3">
+              <img
+                src="/learnloop-logo.png"
+                alt="Study Assistant"
+                className="h-11 w-11 rounded-2xl object-contain shadow-sm"
+              />
+              <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
+                Study assistant
+              </span>
+            </div>
+            <div className="relative z-10 mt-16 max-w-xl sm:mt-24 lg:mt-32">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
+                Your personal study space
+              </p>
+              <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+                Turn your notes into smarter study sessions!
+              </h1>
+              <p className="mt-5 max-w-lg text-lg leading-8 text-slate-700 sm:text-xl">
+                summaries, quizzes, and AI support in one place.
+              </p>
+            </div>
+          </section>
+          <form
+            onSubmit={authenticate}
+            className="space-y-3 rounded-3xl bg-white p-5 shadow-xl shadow-slate-200/60 ring-1 ring-slate-200 sm:p-7"
+          >
+            <h2 className="text-xl font-semibold">
+              {mode === "register" ? "Create your account" : "Welcome back"}
+            </h2>
+            <p className="text-sm text-slate-500">
+              {mode === "register"
+                ? "Save your notes and learn at your own pace."
+                : "Sign in to continue where you left off."}
+            </p>
+            {mode === "register" && (
+              <input
+                required
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="Display name"
+                className="field"
+              />
+            )}
             <input
               required
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Display name"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
               className="field"
             />
-          )}
-          <input
-            required
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className="field"
-          />
-          <input
-            required
-            minLength={8}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password (8+ characters)"
-            className="field"
-          />
-          {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-          <button className="w-full rounded-2xl bg-brand px-5 py-4 font-semibold text-white">
-            {mode === "register" ? "Get started" : "Sign in"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode(mode === "register" ? "login" : "register")}
-            className="w-full py-2 text-sm font-semibold text-brand"
-          >
-            {mode === "register" ? "I already have an account" : "Create an account"}
-          </button>
-        </form>
+            <input
+              required
+              minLength={8}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password (8+ characters)"
+              className="field"
+            />
+            {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+            <button className="w-full rounded-2xl bg-brand px-5 py-4 font-semibold text-white">
+              {mode === "register" ? "Get started" : "Sign in"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode(mode === "register" ? "login" : "register")}
+              className="w-full py-2 text-sm font-semibold text-brand"
+            >
+              {mode === "register" ? "I already have an account" : "Create an account"}
+            </button>
+          </form>
+        </div>
       </main>
     );
   return (

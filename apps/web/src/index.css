@@ -123,6 +123,28 @@ button {
 .app-page {
   position: relative;
 }
+.hero-panel {
+  position: relative;
+  isolation: isolate;
+  background-color: #f7f8fb;
+  background-image:
+    linear-gradient(90deg, rgb(247 248 251 / 78%), rgb(247 248 251 / 24%)),
+    url("/study-hero-background.png");
+  background-position: center, center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+html.dark .hero-panel {
+  background-image:
+    linear-gradient(90deg, rgb(15 23 42 / 88%), rgb(15 23 42 / 58%)),
+    url("/study-hero-background.png");
+}
+html.dark .hero-panel h1 {
+  color: #f8fafc;
+}
+html.dark .hero-panel p:not(.text-brand) {
+  color: #dbeafe;
+}
 .app-page::before {
   position: absolute;
   top: 1.5rem;
@@ -137,4 +159,11 @@ button {
 }
 html.dark .app-page::before {
   background: rgb(167 139 250 / 24%);
+}
+@media (max-width: 1023px) {
+  .hero-panel {
+    background-position:
+      center,
+      62% center;
+  }
 }
