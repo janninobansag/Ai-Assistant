@@ -41,13 +41,19 @@ const publicAttempt = (attempt: any) => ({
   updatedAt: attempt.updatedAt
 });
 const answersInput = z
-  .array(z.object({ questionId: z.string().length(24), selectedIndex: z.number().int().min(0).max(3) }))
+  .array(
+    z.object({ questionId: z.string().length(24), selectedIndex: z.number().int().min(0).max(3) })
+  )
   .max(15)
   .superRefine((answers, context) => {
     const ids = new Set<string>();
     answers.forEach((answer, index) => {
       if (ids.has(answer.questionId))
-        context.addIssue({ code: z.ZodIssueCode.custom, message: "Questions may only be answered once.", path: [index, "questionId"] });
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Questions may only be answered once.",
+          path: [index, "questionId"]
+        });
       ids.add(answer.questionId);
     });
   });
@@ -57,13 +63,15 @@ const resultFor = (attempt: any, quiz: any) => ({
   explanations: quiz.questions.map((question: any) => ({
     questionId: String(question._id),
     prompt: question.prompt,
-    selectedIndex: attempt.answers.find((answer: any) => answer.questionId === String(question._id))?.selectedIndex ?? null,
+    selectedIndex:
+      attempt.answers.find((answer: any) => answer.questionId === String(question._id))
+        ?.selectedIndex ?? null,
     correctIndex: question.correctIndex,
     explanation: question.explanation,
     concept: question.concept,
     isCorrect:
-      attempt.answers.find((answer: any) => answer.questionId === String(question._id))?.selectedIndex ===
-      question.correctIndex
+      attempt.answers.find((answer: any) => answer.questionId === String(question._id))
+        ?.selectedIndex === question.correctIndex
   }))
 });
 router.use(requireAuth);
@@ -102,7 +110,9 @@ router.post("/materials/:materialId/quizzes", async (req, res) => {
   const cost = 4;
   const usage = await UsageDaily.findOne({ userId: owner, dateKey });
   if ((usage?.pointsUsed ?? 0) + cost > env.DAILY_POINTS_LIMIT)
-    return res.status(429).json({ error: { code: "AI_QUOTA_EXCEEDED", message: "Daily AI limit reached.", requestId: null } });
+    return res.status(429).json({
+      error: { code: "AI_QUOTA_EXCEEDED", message: "Daily AI limit reached.", requestId: null }
+    });
   await UsageDaily.findOneAndUpdate(
     { userId: owner, dateKey },
     { $setOnInsert: { userId: owner, dateKey }, $inc: { pointsUsed: cost, operations: 1 } },
@@ -121,23 +131,24 @@ router.post("/materials/:materialId/quizzes", async (req, res) => {
       .status(201)
       .json({ data: publicQuiz(quiz), meta: { cached: false, requestId: null } });
   } catch (error) {
-    await UsageDaily.updateOne({ userId: owner, dateKey }, { $inc: { pointsUsed: -cost, operations: -1 } });
+    await UsageDaily.updateOne(
+      { userId: owner, dateKey },
+      { $inc: { pointsUsed: -cost, operations: -1 } }
+    );
     const message = error instanceof Error ? error.message : "Quiz generation failed.";
     const code = message.includes("not configured")
       ? "AI_PROVIDER_UNAVAILABLE"
       : "AI_OUTPUT_INVALID";
-    return res
-      .status(502)
-      .json({
-        error: {
-          code,
-          message:
-            code === "AI_PROVIDER_UNAVAILABLE"
-              ? message
-              : "Quiz generation returned invalid output. Try again.",
-          requestId: null
-        }
-      });
+    return res.status(502).json({
+      error: {
+        code,
+        message:
+          code === "AI_PROVIDER_UNAVAILABLE"
+            ? message
+            : "Quiz generation returned invalid output. Try again.",
+        requestId: null
+      }
+    });
   }
 });
 router.get("/materials/:materialId/quizzes", async (req, res) => {
@@ -182,11 +193,19 @@ router.patch("/attempts/:attemptId", async (req, res) => {
   const validQuestionIds = new Set(quiz.questions.map((question) => String(question._id)));
   if (parsed.data.answers.some((answer) => !validQuestionIds.has(answer.questionId)))
     return res.status(400).json({
-      error: { code: "VALIDATION_ERROR", message: "Answers must belong to this quiz.", requestId: null }
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Answers must belong to this quiz.",
+        requestId: null
+      }
     });
   const attempt = await QuizAttempt.findOneAndUpdate(
     { _id: existing.id, userId: userId(req), status: "in_progress" },
-    { $set: { answers: parsed.data.answers.map((answer) => ({ ...answer, answeredAt: new Date() })) } },
+    {
+      $set: {
+        answers: parsed.data.answers.map((answer) => ({ ...answer, answeredAt: new Date() }))
+      }
+    },
     { new: true }
   );
   return attempt
@@ -207,7 +226,10 @@ router.post("/attempts/:attemptId/submit", async (req, res) => {
       .status(404)
       .json({ error: { code: "NOT_FOUND", message: "Quiz not found.", requestId: null } });
   if (attempt.status === "submitted")
-    return res.json({ data: resultFor(attempt, quiz), meta: { idempotent: true, requestId: null } });
+    return res.json({
+      data: resultFor(attempt, quiz),
+      meta: { idempotent: true, requestId: null }
+    });
   const scoring = scoreQuiz(
     quiz.questions.map((question) => ({
       id: String(question._id),
@@ -222,12 +244,23 @@ router.post("/attempts/:attemptId/submit", async (req, res) => {
   const submittedAt = new Date();
   const saved = await QuizAttempt.findOneAndUpdate(
     { _id: attempt.id, userId: userId(req), status: "in_progress" },
-    { $set: { score: scoring.score, correctCount: scoring.correctCount, weakConcepts: scoring.weakConcepts, status: "submitted", submittedAt } },
+    {
+      $set: {
+        score: scoring.score,
+        correctCount: scoring.correctCount,
+        weakConcepts: scoring.weakConcepts,
+        status: "submitted",
+        submittedAt
+      }
+    },
     { new: true }
   );
-  const finalAttempt = saved ?? (await QuizAttempt.findOne({ _id: attempt.id, userId: userId(req) }));
+  const finalAttempt =
+    saved ?? (await QuizAttempt.findOne({ _id: attempt.id, userId: userId(req) }));
   if (!finalAttempt)
-    return res.status(404).json({ error: { code: "NOT_FOUND", message: "Attempt not found.", requestId: null } });
+    return res
+      .status(404)
+      .json({ error: { code: "NOT_FOUND", message: "Attempt not found.", requestId: null } });
   return res.json({
     data: resultFor(finalAttempt, quiz),
     meta: { idempotent: !saved, requestId: null }
@@ -246,21 +279,27 @@ router.post("/attempts/:attemptId/retry", async (req, res) => {
     status: "submitted"
   });
   if (!attempt)
-    return res
-      .status(404)
-      .json({ error: { code: "NOT_FOUND", message: "Submitted attempt not found.", requestId: null } });
+    return res.status(404).json({
+      error: { code: "NOT_FOUND", message: "Submitted attempt not found.", requestId: null }
+    });
   const source = await Quiz.findOne({ _id: attempt.quizId, userId: userId(req) });
   if (!source)
     return res
       .status(404)
       .json({ error: { code: "NOT_FOUND", message: "Quiz not found.", requestId: null } });
-  const selected = new Map(attempt.answers.map((answer) => [answer.questionId, answer.selectedIndex]));
+  const selected = new Map(
+    attempt.answers.map((answer) => [answer.questionId, answer.selectedIndex])
+  );
   const incorrect = source.questions.filter(
     (question) => selected.get(String(question._id)) !== question.correctIndex
   );
   if (incorrect.length === 0)
     return res.status(409).json({
-      error: { code: "CONFLICT", message: "There are no incorrect questions to retry.", requestId: null }
+      error: {
+        code: "CONFLICT",
+        message: "There are no incorrect questions to retry.",
+        requestId: null
+      }
     });
   const retryQuiz = await Quiz.create({
     userId: userId(req),
@@ -280,7 +319,11 @@ router.post("/attempts/:attemptId/retry", async (req, res) => {
       concept: question.concept
     }))
   });
-  const retryAttempt = await QuizAttempt.create({ userId: userId(req), quizId: retryQuiz.id, answers: [] });
+  const retryAttempt = await QuizAttempt.create({
+    userId: userId(req),
+    quizId: retryQuiz.id,
+    answers: []
+  });
   return res.status(201).json({
     data: { quiz: publicQuiz(retryQuiz), attempt: publicAttempt(retryAttempt) },
     meta: { requestId: null }
@@ -300,7 +343,18 @@ router.get("/practice/history", async (req, res) => {
     data: items.flatMap((attempt) => {
       const quiz = quizById.get(String(attempt.quizId));
       return quiz
-        ? [{ ...publicAttempt(attempt), quiz: { id: String(quiz._id), title: quiz.title, materialId: String(quiz.materialId), difficulty: quiz.difficulty, questionCount: quiz.questionCount } }]
+        ? [
+            {
+              ...publicAttempt(attempt),
+              quiz: {
+                id: String(quiz._id),
+                title: quiz.title,
+                materialId: String(quiz.materialId),
+                difficulty: quiz.difficulty,
+                questionCount: quiz.questionCount
+              }
+            }
+          ]
         : [];
     }),
     meta: { requestId: null }
@@ -314,8 +368,8 @@ router.delete("/practice/history/:attemptId", async (req, res) => {
   });
   return deleted
     ? res.status(204).end()
-    : res
-        .status(404)
-        .json({ error: { code: "NOT_FOUND", message: "Completed attempt not found.", requestId: null } });
+    : res.status(404).json({
+        error: { code: "NOT_FOUND", message: "Completed attempt not found.", requestId: null }
+      });
 });
 export default router;

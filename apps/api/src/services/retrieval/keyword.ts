@@ -11,13 +11,18 @@ export async function retrieveChunks(userId: string, materialIds: string[], ques
   return chunks
     .map((chunk) => {
       const searchable = `${chunk.heading ?? ""} ${chunk.text}`.toLowerCase();
-      return { chunk, score: queryTerms.reduce((total, term) => total + (searchable.includes(term) ? 1 : 0), 0) };
+      return {
+        chunk,
+        score: queryTerms.reduce((total, term) => total + (searchable.includes(term) ? 1 : 0), 0)
+      };
     })
     .sort((a, b) => b.score - a.score || a.chunk.ordinal - b.chunk.ordinal)
     .filter((item, index) => item.score > 0 || index < 2)
     .slice(0, 4)
     .map(({ chunk }) => ({
-      chunkId: String(chunk._id), materialId: String(chunk.materialId), label: chunk.heading || `Section ${chunk.ordinal + 1}`,
+      chunkId: String(chunk._id),
+      materialId: String(chunk.materialId),
+      label: chunk.heading || `Section ${chunk.ordinal + 1}`,
       text: chunk.text.slice(0, 1800)
     }));
 }

@@ -13,9 +13,17 @@ const messageSchema = new Schema(
       },
       maxlength: 8000
     },
-    status: { type: String, enum: ["pending", "streaming", "completed", "interrupted", "failed"], required: true },
+    status: {
+      type: String,
+      enum: ["pending", "streaming", "completed", "interrupted", "failed"],
+      required: true
+    },
     citations: [
-      { materialId: { type: Types.ObjectId, required: true }, chunkId: { type: Types.ObjectId, required: true }, label: { type: String, required: true } }
+      {
+        materialId: { type: Types.ObjectId, required: true },
+        chunkId: { type: Types.ObjectId, required: true },
+        label: { type: String, required: true }
+      }
     ],
     clientMessageId: { type: String, maxlength: 100 }
   },
