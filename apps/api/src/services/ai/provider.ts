@@ -1,6 +1,7 @@
 import { env } from "../../config/env.js";
 import { FakeProvider, type SummaryStyle, type SummaryResult } from "./fake-provider.js";
 import { summaryOutputSchema, type SummaryOutput } from "./schema.js";
+import { hostedFetch } from "./circuit-breaker.js";
 
 const fake = new FakeProvider();
 const promptVersion = "summary-v1";
@@ -13,13 +14,12 @@ function prompt(text: string, style: SummaryStyle) {
 async function gemini(text: string, style: SummaryStyle): Promise<SummaryOutput> {
   if (!env.GEMINI_API_KEY) throw new Error("Hosted AI is not configured.");
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.HOSTED_AI_MODEL)}:generateContent`;
-  const response = await fetch(url, {
+  const response = await hostedFetch(url, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
     body: JSON.stringify({ contents: [{ parts: [{ text: prompt(text, style) }] }] }),
     signal: AbortSignal.timeout(30_000)
   });
-  if (!response.ok) throw new Error(`Hosted AI request failed (${response.status}).`);
   const body = (await response.json()) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
   };

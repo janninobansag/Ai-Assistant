@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { hostedFetch } from "./circuit-breaker.js";
 
 type Source = { label: string; text: string };
 const buildPrompt = (question: string, sources: Source[], history: Array<{ role: string; content: string }>, summary: string) =>
@@ -10,11 +11,10 @@ export async function* streamGroundedAnswer(question: string, sources: Source[],
     return;
   }
   if (!env.GEMINI_API_KEY) throw new Error("Hosted AI is not configured.");
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.HOSTED_AI_MODEL)}:streamGenerateContent?alt=sse`, {
+  const response = await hostedFetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.HOSTED_AI_MODEL)}:streamGenerateContent?alt=sse`, {
     method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
     body: JSON.stringify({ contents: [{ parts: [{ text: buildPrompt(question, sources, history, summary) }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 700 } }), signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(30_000)
   });
-  if (!response.ok) throw new Error(`Hosted AI request failed (${response.status}).`);
   if (!response.body) throw new Error("Hosted AI returned no stream.");
   const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ""; let received = false;
   const consumeEvents = (input: string) => {

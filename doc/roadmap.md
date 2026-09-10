@@ -110,14 +110,14 @@ Status: **Complete**. Source-only tutor conversations, ownership-scoped keyword 
 
 ## Phase 5 — PWA hardening and beta
 
-Status: **In progress**. Installable PWA metadata, public shell caching, offline fallback, controlled updates, basic API/auth request limits, health endpoints, a daily AI-points indicator, account export/deletion controls, and in-app privacy/AI disclosure are implemented. Deployment, accessibility audit, shared production abuse controls, reviewed legal copy, and beta readiness remain.
+Status: **In progress**. Installable PWA metadata, public shell caching, offline fallback, controlled updates, basic API/auth request limits, circuit breaker, health endpoints, a daily AI-points indicator, account export/deletion controls, in-app privacy/AI disclosure, and a release checklist are implemented. Real-device, backup-restore, legal, and deployment verification remain.
 
 ### Deliverables
 
 - [x] Manifest, install assets, service worker, update flow, and offline screen.
-- [ ] Mobile accessibility and responsive-layout audit.
-- [ ] Rate limiting, abuse controls, provider circuit breaker, and quota UI.
-- [ ] Structured logging, metrics, error reporting, health checks, and database backups.
+- [x] Mobile accessibility and responsive-layout source audit. Real-device and deployed automated checks remain in `accessibility-audit.md`.
+- [x] Rate limiting, abuse controls, provider circuit breaker, and quota UI. The current limiter is in-memory for one API process; use a shared store or hosting-provider limit when scaling to multiple instances.
+- [ ] Structured logging, metrics, error reporting, health checks, and database backups. Redacted request logging, aggregate metrics, and health checks are implemented; production error reporting and a tested backup restore remain.
 - [ ] Privacy policy, terms, AI disclosure, account export, and account deletion. Account export/deletion and an in-app draft disclosure are implemented; public legal review and launch details remain.
 - [ ] Production deployment and smoke-test checklist.
 

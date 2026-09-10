@@ -8,6 +8,7 @@ config({ path: resolve(dirname(fileURLToPath(import.meta.url)), "../../../../.en
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   API_PORT: z.coerce.number().int().positive().default(4000),
+  PORT: z.coerce.number().int().positive().optional(),
   WEB_ORIGIN: z.string().url().default("http://localhost:5173"),
   MONGODB_URI: z.string().default("mongodb://127.0.0.1:27017/ai-study-assistant"),
   ACCESS_TOKEN_SECRET: z.string().min(32).default("development-access-secret-change-me-32chars"),
@@ -22,6 +23,8 @@ const envSchema = z.object({
   GLOBAL_DAILY_AI_OPERATIONS: z.coerce.number().int().positive().default(500),
   AI_MONTHLY_SPEND_LIMIT_USD: z.coerce.number().nonnegative().default(0),
   API_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(120),
-  AUTH_RATE_LIMIT_PER_15_MINUTES: z.coerce.number().int().positive().default(20)
+  AUTH_RATE_LIMIT_PER_15_MINUTES: z.coerce.number().int().positive().default(20),
+  AI_CIRCUIT_BREAKER_FAILURES: z.coerce.number().int().positive().default(3),
+  AI_CIRCUIT_BREAKER_COOLDOWN_SECONDS: z.coerce.number().int().positive().default(60)
 });
 export const env = envSchema.parse(process.env);
