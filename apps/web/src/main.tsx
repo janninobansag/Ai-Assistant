@@ -1806,17 +1806,23 @@ export function App() {
               </p>
             )}
             {visibleMaterials.map((material) => (
-              <div key={material._id} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p title={material.title} className="truncate font-semibold">
+              <div
+                key={material._id}
+                className="min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+              >
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                  <div className="min-w-0 overflow-hidden">
+                    <p
+                      title={material.title}
+                      className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap font-semibold"
+                    >
                       {material.title}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
                       {material.characterCount.toLocaleString()} characters
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       aria-label={`Edit ${material.title}`}
