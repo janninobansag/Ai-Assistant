@@ -38,6 +38,7 @@ Provider secrets must only exist on the server. They must never be shipped in th
 - [API specification](./api-spec.md) — REST endpoints, payloads, streaming, and error conventions.
 - [Delivery roadmap](./roadmap.md) — implementation phases, acceptance criteria, tests, risks, and backlog.
 - [AI runtime decision](./ai-runtime-decision.md) — hosted/local runtime choice, $0 budget, quotas, and privacy notes.
+- [Observability and backup operations](./observability.md) — health checks, redacted logs, optional error reporting, and the Atlas restore drill.
 
 ## MVP definition
 

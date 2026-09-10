@@ -1,6 +1,7 @@
 import { app } from "./app.js";
 import { env } from "./config/env.js";
 import { connectDatabase, disconnectDatabase } from "./config/database.js";
+import { flushErrorReports, reportException } from "./services/observability.js";
 
 async function start(): Promise<void> {
   try {
@@ -13,6 +14,7 @@ async function start(): Promise<void> {
       console.log(`${signal} received; shutting down`);
       server.close(async () => {
         await disconnectDatabase();
+        await flushErrorReports();
         process.exit(0);
       });
     };
@@ -26,5 +28,13 @@ async function start(): Promise<void> {
     setTimeout(() => void start(), 5_000);
   }
 }
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection", reason);
+  reportException(reason, { source: "unhandled_rejection" });
+});
+process.on("uncaughtExceptionMonitor", (error) => {
+  reportException(error, { source: "uncaught_exception" });
+});
 
 void start();

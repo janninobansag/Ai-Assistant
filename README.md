@@ -12,7 +12,7 @@ Mobile-first AI study assistant built as a MERN-style TypeScript monorepo. Stude
 
 ## Current status
 
-Phase 1 (accounts and study library) is complete. Phase 2 summary generation is implemented, including validation, caching, and long-material map/reduce. Phase 3 quiz generation is in progress; quiz attempts, scoring, and practice history are next.
+Phases 1–4 are complete. Phase 5 is in private beta: the PWA, mobile/desktop UI, deployment configuration, health checks, quotas, rate limits, account controls, and privacy safeguards are implemented. Manual real-device testing, an Atlas backup-restore drill, and legal review remain before a public launch.
 
 ## Quick start
 

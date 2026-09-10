@@ -1,5 +1,5 @@
 import cors from "cors";
-import express, { type RequestHandler } from "express";
+import express, { type ErrorRequestHandler, type RequestHandler } from "express";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
 import { env } from "./config/env.js";
@@ -14,6 +14,7 @@ import conversationRoutes from "./modules/conversations/routes.js";
 import usageRoutes from "./modules/usage/routes.js";
 import { rateLimit } from "./middleware/rate-limit.js";
 import { collectMetrics, metricsSnapshot } from "./middleware/metrics.js";
+import { reportException } from "./services/observability.js";
 const pinoMiddleware = pinoHttp as unknown as (options?: object) => RequestHandler;
 export const app = express();
 export const fakeProvider = new FakeProvider();
@@ -69,3 +70,25 @@ app.get("/api/v1/dev/fake-summary", async (req, res) => {
     meta: { provider: "fake" }
   });
 });
+
+const errorHandler: ErrorRequestHandler = (error, req, res, next) => {
+  if (res.headersSent) return next(error);
+  req.log.error(
+    { err: error, requestId: req.id, method: req.method, path: req.path },
+    "request failed"
+  );
+  reportException(error, {
+    requestId: String(req.id),
+    method: req.method,
+    path: req.path,
+    source: "express"
+  });
+  return res.status(500).json({
+    error: {
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Please try again.",
+      requestId: req.id
+    }
+  });
+};
+app.use(errorHandler);

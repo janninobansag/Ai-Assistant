@@ -110,16 +110,16 @@ Status: **Complete**. Source-only tutor conversations, ownership-scoped keyword 
 
 ## Phase 5 — PWA hardening and beta
 
-Status: **In progress**. Installable PWA metadata, public shell caching, offline fallback, controlled updates, basic API/auth request limits, circuit breaker, health endpoints, a daily AI-points indicator, account export/deletion controls, in-app privacy/AI disclosure, and a release checklist are implemented. Real-device, backup-restore, legal, and deployment verification remain.
+Status: **In progress**. The Vercel PWA and Render API are deployed. Installable PWA metadata, public shell caching, offline fallback, controlled updates, API/auth request limits, a circuit breaker, health endpoints, a daily AI-points indicator, account export/deletion controls, in-app privacy/AI disclosure, redacted logging, aggregate metrics, optional Sentry reporting, and a release checklist are implemented. Real-device, backup-restore, legal, and full smoke-test verification remain.
 
 ### Deliverables
 
 - [x] Manifest, install assets, service worker, update flow, and offline screen.
 - [x] Mobile accessibility and responsive-layout source audit. Real-device and deployed automated checks remain in `accessibility-audit.md`.
 - [x] Rate limiting, abuse controls, provider circuit breaker, and quota UI. The current limiter is in-memory for one API process; use a shared store or hosting-provider limit when scaling to multiple instances.
-- [ ] Structured logging, metrics, error reporting, health checks, and database backups. Redacted request logging, aggregate metrics, and health checks are implemented; production error reporting and a tested backup restore remain.
+- [-] Structured logging, metrics, error reporting, health checks, and database backups. Redacted request logging, aggregate metrics, health checks, and an optional privacy-filtered Sentry integration are implemented. Configure `SENTRY_DSN` in Render and complete a tested Atlas backup restore before marking this complete; see `observability.md`.
 - [ ] Privacy policy, terms, AI disclosure, account export, and account deletion. Account export/deletion and an in-app draft disclosure are implemented; public legal review and launch details remain.
-- [ ] Production deployment and smoke-test checklist.
+- [-] Production deployment and smoke-test checklist. Vercel web and Render API deployment configuration are implemented; complete the manual beta smoke tests in `release-checklist.md` before marking this complete.
 
 ### Exit criteria
 

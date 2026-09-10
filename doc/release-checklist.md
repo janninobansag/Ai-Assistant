@@ -9,6 +9,7 @@
 - [ ] Enable Atlas backups and record how to restore into a separate test database.
 - [ ] Configure hosting health checks to call `/api/v1/health/live` and `/api/v1/health/ready`.
 - [ ] Monitor `/api/v1/health/metrics`; it reports only aggregate request counts, never study content.
+- [ ] Configure optional Sentry reporting with `SENTRY_DSN` and `SENTRY_ENVIRONMENT=production`; verify an event contains no note content or credentials.
 - [ ] Replace the draft privacy-policy placeholders with operator name, contact email, providers, retention policy, and jurisdiction.
 
 ## Smoke test on deployment
@@ -21,6 +22,15 @@
 - [ ] Install on Android Chrome and verify the update prompt.
 - [ ] On iPhone Safari, use Share → Add to Home Screen and document any platform limitation.
 - [ ] Test at 320px width and 200% browser zoom.
+
+## Record the beta verification
+
+- Deployment date and commit: **[add]**
+- Render ready health check result: **[add]**
+- Vercel same-site session refresh result: **[add]**
+- Android install/update result: **[add]**
+- Atlas backup-restore result and date: **[add]**
+- Reviewer and legal review status: **[add]**
 
 ## Do not mark public release complete until
 
