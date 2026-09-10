@@ -10,6 +10,51 @@ body {
   margin: 0;
   min-width: 320px;
 }
+html.dark {
+  color-scheme: dark;
+  background: #0f172a;
+}
+html.dark body {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+html.dark .bg-white,
+html.dark .field,
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #172033 !important;
+  color: #e2e8f0;
+}
+html.dark .bg-slate-50,
+html.dark .bg-slate-100 {
+  background-color: #1e293b !important;
+}
+html.dark .bg-blue-50 {
+  background-color: #172554 !important;
+}
+html.dark .bg-red-50 {
+  background-color: #3f1d2e !important;
+}
+html.dark .border-slate-200,
+html.dark .border-slate-300,
+html.dark .field {
+  border-color: #475569 !important;
+}
+html.dark .text-slate-950,
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700,
+html.dark .text-ink {
+  color: #f1f5f9 !important;
+}
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: #cbd5e1 !important;
+}
+html.dark .text-blue-950 {
+  color: #dbeafe !important;
+}
 .skip-link {
   position: fixed;
   top: 0.5rem;
