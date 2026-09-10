@@ -225,6 +225,16 @@ export function App() {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, []);
   useEffect(() => {
+    const closeActionMenus = (event: PointerEvent) => {
+      if (!(event.target instanceof Element) || event.target.closest("[data-action-menu]")) return;
+      setOpenMaterialMenuId("");
+      setOpenSubjectMenuId("");
+      setOpenHistoryMenuId("");
+    };
+    document.addEventListener("pointerdown", closeActionMenus);
+    return () => document.removeEventListener("pointerdown", closeActionMenus);
+  }, []);
+  useEffect(() => {
     const onInstallPrompt = (event: Event) => {
       event.preventDefault();
       setInstallPrompt(event as BeforeInstallPromptEvent);
@@ -1615,7 +1625,7 @@ export function App() {
                     >
                       <span className="block truncate font-semibold">{subject.name}</span>
                     </button>
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <div data-action-menu className="absolute right-2 top-1/2 -translate-y-1/2">
                       <button
                         type="button"
                         aria-label={`Actions for ${subject.name}`}
@@ -1813,7 +1823,7 @@ export function App() {
                     >
                       <span aria-hidden="true">✎</span>
                     </button>
-                    <div className="relative">
+                    <div data-action-menu className="relative">
                       <button
                         type="button"
                         aria-label={`Actions for ${material.title}`}
@@ -2270,7 +2280,7 @@ export function App() {
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
                       <p className="font-semibold text-brand">{item.score}%</p>
-                      <div className="relative">
+                      <div data-action-menu className="relative">
                         <button
                           type="button"
                           aria-label={`Actions for ${item.quiz.title}`}
