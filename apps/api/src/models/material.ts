@@ -6,6 +6,7 @@ const materialSchema = new Schema(
     title: { type: String, required: true, trim: true, maxlength: 120 },
     sourceType: { type: String, enum: ["text"], default: "text" },
     rawText: { type: String, required: true, maxlength: 50000 },
+    formattedText: { type: String, maxlength: 200000, default: "" },
     normalizedText: { type: String, required: true },
     contentHash: { type: String, required: true },
     tags: { type: [String], default: [] },

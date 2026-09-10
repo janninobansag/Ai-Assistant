@@ -17,7 +17,7 @@ type User = {
 };
 type Subject = { _id: string; name: string };
 type Material = { _id: string; subjectId: string; title: string; characterCount: number };
-type MaterialDetail = Material & { rawText: string };
+type MaterialDetail = Material & { rawText: string; formattedText?: string };
 type Summary = {
   materialId?: string;
   overview: string;
@@ -75,7 +75,9 @@ type AdminUser = {
   createdAt: string;
   updatedAt: string;
 };
-type NoteFormat = "bold" | "italic" | "heading" | "bullet";
+type NoteFormat = "bold" | "italic" | "underline" | "heading" | "bullet";
+const plainTextToHtml = (text: string) =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
 function recommendedQuestionCount(characterCount: number): 5 | 10 | 15 {
   if (characterCount >= 7_500) return 15;
   if (characterCount >= 2_500) return 10;
@@ -130,6 +132,7 @@ export function App() {
   const [selectedSubject, setSelectedSubject] = useState("");
   const [materialTitle, setMaterialTitle] = useState("");
   const [materialText, setMaterialText] = useState("");
+  const [materialFormattedText, setMaterialFormattedText] = useState("");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -142,6 +145,7 @@ export function App() {
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [editMaterialTitle, setEditMaterialTitle] = useState("");
   const [editMaterialText, setEditMaterialText] = useState("");
+  const [editMaterialFormattedText, setEditMaterialFormattedText] = useState("");
   const [savingMaterialEdit, setSavingMaterialEdit] = useState(false);
   const [openMaterialMenuId, setOpenMaterialMenuId] = useState("");
   const [openSubjectMenuId, setOpenSubjectMenuId] = useState("");
@@ -151,8 +155,8 @@ export function App() {
   const [tutorBusy, setTutorBusy] = useState(false);
   const [sourceExcerpt, setSourceExcerpt] = useState<SourceExcerpt | null>(null);
   const tutorAbort = useRef<AbortController | null>(null);
-  const materialTextInput = useRef<HTMLTextAreaElement | null>(null);
-  const editMaterialTextInput = useRef<HTMLTextAreaElement | null>(null);
+  const materialTextInput = useRef<HTMLDivElement | null>(null);
+  const editMaterialTextInput = useRef<HTMLDivElement | null>(null);
   const searchDialog = useRef<HTMLElement | null>(null);
   const settingsDialog = useRef<HTMLElement | null>(null);
   const privacyDialog = useRef<HTMLElement | null>(null);
@@ -196,6 +200,10 @@ export function App() {
           : null;
     dialog?.focus();
   }, [searchOpen, settingsOpen, privacyOpen]);
+  useEffect(() => {
+    if (!editingMaterial || !editMaterialTextInput.current) return;
+    editMaterialTextInput.current.innerHTML = editMaterialFormattedText;
+  }, [editingMaterial]);
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -527,7 +535,8 @@ export function App() {
           body: JSON.stringify({
             subjectId: selectedSubject,
             title: materialTitle,
-            text: materialText
+            text: materialText,
+            formattedText: materialFormattedText
           })
         },
         token
@@ -535,6 +544,8 @@ export function App() {
       setMaterials((items) => [data, ...items]);
       setMaterialTitle("");
       setMaterialText("");
+      setMaterialFormattedText("");
+      if (materialTextInput.current) materialTextInput.current.innerHTML = "";
     } catch (e) {
       setError((e as Error).message);
     }
@@ -571,6 +582,7 @@ export function App() {
       setEditingMaterial(material);
       setEditMaterialTitle(detail.title);
       setEditMaterialText(detail.rawText);
+      setEditMaterialFormattedText(detail.formattedText || plainTextToHtml(detail.rawText));
     } catch (e) {
       setError((e as Error).message);
     }
@@ -585,7 +597,11 @@ export function App() {
         `/materials/${editingMaterial._id}`,
         {
           method: "PATCH",
-          body: JSON.stringify({ title: editMaterialTitle, text: editMaterialText })
+          body: JSON.stringify({
+            title: editMaterialTitle,
+            text: editMaterialText,
+            formattedText: editMaterialFormattedText
+          })
         },
         token
       );
@@ -607,55 +623,28 @@ export function App() {
     }
   }
   function formatNote(
-    input: RefObject<HTMLTextAreaElement | null>,
-    value: string,
-    setValue: (nextValue: string) => void,
+    input: RefObject<HTMLDivElement | null>,
+    setText: (nextValue: string) => void,
+    setFormattedText: (nextValue: string) => void,
     format: NoteFormat
   ) {
-    const textarea = input.current;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = value.slice(start, end) || "text";
-    let nextValue = value;
-    let selectionStart = start;
-    let selectionEnd = end;
-    if (format === "bold" || format === "italic") {
-      const marker = format === "bold" ? "**" : "_";
-      nextValue = `${value.slice(0, start)}${marker}${selected}${marker}${value.slice(end)}`;
-      selectionStart = start + marker.length;
-      selectionEnd = selectionStart + selected.length;
-    }
-    if (format === "heading") {
-      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-      nextValue = `${value.slice(0, lineStart)}## ${value.slice(lineStart)}`;
-      selectionStart = start + 3;
-      selectionEnd = end + 3;
-    }
-    if (format === "bullet") {
-      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-      const lineEnd = value.indexOf("\n", end);
-      const blockEnd = lineEnd === -1 ? value.length : lineEnd;
-      const block = value.slice(lineStart, blockEnd);
-      const formatted = `- ${block.replace(/\n/g, "\n- ")}`;
-      nextValue = `${value.slice(0, lineStart)}${formatted}${value.slice(blockEnd)}`;
-      selectionStart = lineStart;
-      selectionEnd = lineStart + formatted.length;
-    }
-    setValue(nextValue);
-    window.requestAnimationFrame(() => {
-      textarea.focus();
-      textarea.setSelectionRange(selectionStart, selectionEnd);
-    });
+    const editor = input.current;
+    if (!editor) return;
+    editor.focus();
+    if (format === "heading") document.execCommand("formatBlock", false, "h2");
+    else if (format === "bullet") document.execCommand("insertUnorderedList");
+    else document.execCommand(format);
+    setText(editor.innerText);
+    setFormattedText(editor.innerHTML);
   }
   function NoteToolbar({
     input,
-    value,
-    setValue
+    setText,
+    setFormattedText
   }: {
-    input: RefObject<HTMLTextAreaElement | null>;
-    value: string;
-    setValue: (nextValue: string) => void;
+    input: RefObject<HTMLDivElement | null>;
+    setText: (nextValue: string) => void;
+    setFormattedText: (nextValue: string) => void;
   }) {
     const buttons: Array<{
       format: NoteFormat;
@@ -665,6 +654,12 @@ export function App() {
     }> = [
       { format: "bold", label: "Bold selected text", symbol: "B", className: "font-bold" },
       { format: "italic", label: "Italicize selected text", symbol: "I", className: "italic" },
+      {
+        format: "underline",
+        label: "Underline selected text",
+        symbol: "U",
+        className: "underline"
+      },
       { format: "heading", label: "Add heading", symbol: "H", className: "font-bold" },
       { format: "bullet", label: "Make a bullet list", symbol: "•≡", className: "text-base" }
     ];
@@ -680,7 +675,7 @@ export function App() {
             type="button"
             aria-label={button.label}
             title={button.label}
-            onClick={() => formatNote(input, value, setValue, button.format)}
+            onClick={() => formatNote(input, setText, setFormattedText, button.format)}
             className={`grid h-9 min-w-9 place-items-center rounded-lg px-2 text-sm text-slate-700 hover:bg-white hover:text-brand ${button.className ?? ""}`}
           >
             <span aria-hidden="true">{button.symbol}</span>
@@ -1665,21 +1660,28 @@ export function App() {
               </label>
               <NoteToolbar
                 input={materialTextInput}
-                value={materialText}
-                setValue={setMaterialText}
+                setText={setMaterialText}
+                setFormattedText={setMaterialFormattedText}
               />
-              <textarea
+              <div
                 id="material-text"
                 ref={materialTextInput}
-                required
-                minLength={100}
-                value={materialText}
-                onChange={(e) => setMaterialText(e.target.value)}
-                placeholder="Paste your lecture notes here..."
-                rows={7}
-                className="field resize-none"
+                contentEditable
+                suppressContentEditableWarning
+                role="textbox"
+                aria-multiline="true"
+                aria-label="Study notes"
+                data-placeholder="Paste your lecture notes here..."
+                onInput={(event) => {
+                  setMaterialText(event.currentTarget.innerText);
+                  setMaterialFormattedText(event.currentTarget.innerHTML);
+                }}
+                className="rich-note-editor field min-h-56"
               />
-              <button className="w-full rounded-2xl bg-brand px-5 py-4 font-semibold text-white">
+              <button
+                disabled={materialText.trim().length < 100 || materialText.length > 50000}
+                className="w-full rounded-2xl bg-brand px-5 py-4 font-semibold text-white disabled:opacity-50"
+              >
                 Save material
               </button>
             </form>
@@ -1853,19 +1855,22 @@ export function App() {
                 </label>
                 <NoteToolbar
                   input={editMaterialTextInput}
-                  value={editMaterialText}
-                  setValue={setEditMaterialText}
+                  setText={setEditMaterialText}
+                  setFormattedText={setEditMaterialFormattedText}
                 />
-                <textarea
+                <div
                   id="edit-material-text"
                   ref={editMaterialTextInput}
-                  required
-                  minLength={100}
-                  maxLength={50000}
-                  rows={13}
-                  value={editMaterialText}
-                  onChange={(event) => setEditMaterialText(event.target.value)}
-                  className="field resize-y"
+                  contentEditable
+                  suppressContentEditableWarning
+                  role="textbox"
+                  aria-multiline="true"
+                  aria-label="Study notes"
+                  onInput={(event) => {
+                    setEditMaterialText(event.currentTarget.innerText);
+                    setEditMaterialFormattedText(event.currentTarget.innerHTML);
+                  }}
+                  className="rich-note-editor field min-h-[20rem]"
                 />
                 <p className="rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
                   Saving changed notes removes older summaries, quizzes, and attempts for this
