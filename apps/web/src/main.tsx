@@ -1197,12 +1197,22 @@ export function App() {
         )}
         <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
           <div className="space-y-6">
-            <section className="overflow-hidden rounded-3xl bg-brand p-5 text-white shadow-xl shadow-brand/20 sm:p-6">
-              <p className="text-sm text-blue-100">Your study library</p>
-              <p className="mt-1 text-3xl font-bold">{subjects.length} subjects</p>
-              <p className="mt-1 text-blue-100">{materials.length} saved materials</p>
+            <section className="relative overflow-hidden rounded-3xl bg-brand p-5 text-white shadow-xl shadow-brand/20 sm:p-6">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute right-5 top-5 grid h-16 w-16 place-items-center rounded-3xl bg-white/10 ring-1 ring-white/20 sm:right-6 sm:top-6"
+              >
+                <img
+                  src="/learnloop-logo.png"
+                  alt=""
+                  className="h-12 w-12 object-contain brightness-0 invert opacity-90"
+                />
+              </div>
+              <p className="relative text-sm text-blue-100">Your study library</p>
+              <p className="relative mt-1 text-3xl font-bold">{subjects.length} subjects</p>
+              <p className="relative mt-1 text-blue-100">{materials.length} saved materials</p>
               {dailyUsage && (
-                <div className="mt-4">
+                <div className="relative mt-4">
                   <div className="flex items-center justify-between gap-3 text-sm text-blue-100">
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgb(110,231,183)]" />
