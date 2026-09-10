@@ -7,7 +7,13 @@ type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
-type User = { id: string; email: string; displayName: string };
+type Theme = "light" | "dark";
+type User = {
+  id: string;
+  email: string;
+  displayName: string;
+  preferences?: { theme?: "system" | Theme };
+};
 type Subject = { _id: string; name: string };
 type Material = { _id: string; subjectId: string; title: string; characterCount: number };
 type Summary = {
@@ -79,6 +85,11 @@ async function request<T>(path: string, options: RequestInit = {}, token?: strin
 export function App() {
   const [token, setToken] = useState("");
   const [user, setUser] = useState<User | null>(null);
+  const [theme, setTheme] = useState<Theme>(() => {
+    const savedTheme = localStorage.getItem("study-assistant-theme");
+    if (savedTheme === "dark" || savedTheme === "light") return savedTheme;
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
   const [booting, setBooting] = useState(true);
   const [online, setOnline] = useState(() => navigator.onLine);
   const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
@@ -129,6 +140,14 @@ export function App() {
       .catch(() => undefined)
       .finally(() => setBooting(false));
   }, []);
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("study-assistant-theme", theme);
+  }, [theme]);
+  useEffect(() => {
+    const savedTheme = user?.preferences?.theme;
+    if (savedTheme === "dark" || savedTheme === "light") setTheme(savedTheme);
+  }, [user?.preferences?.theme]);
   useEffect(() => {
     const dialog = settingsOpen
       ? settingsDialog.current
@@ -310,6 +329,21 @@ export function App() {
     setSettingsOpen(false);
     setUser(null);
     setToken("");
+  }
+  async function toggleTheme() {
+    const nextTheme: Theme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    if (!token) return;
+    try {
+      const result = await request<{ user: User }>(
+        "/auth/me",
+        { method: "PATCH", body: JSON.stringify({ theme: nextTheme }) },
+        token
+      );
+      setUser(result.user);
+    } catch {
+      // The current device still remembers the chosen appearance if the API is unavailable.
+    }
   }
   async function createSubject(event: FormEvent) {
     event.preventDefault();
@@ -728,6 +762,17 @@ export function App() {
                 </p>
               )}
               <div className="mt-4 space-y-2">
+                <button
+                  type="button"
+                  aria-pressed={theme === "dark"}
+                  onClick={() => void toggleTheme()}
+                  className="flex w-full items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800"
+                >
+                  <span>Dark mode</span>
+                  <span className="text-sm font-medium text-slate-500">
+                    {theme === "dark" ? "On" : "Off"}
+                  </span>
+                </button>
                 {installPrompt && (
                   <button
                     type="button"
