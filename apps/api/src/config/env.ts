@@ -29,7 +29,13 @@ const envSchema = z.object({
   AUTH_RATE_LIMIT_PER_15_MINUTES: z.coerce.number().int().positive().default(20),
   AI_CIRCUIT_BREAKER_FAILURES: z.coerce.number().int().positive().default(3),
   AI_CIRCUIT_BREAKER_COOLDOWN_SECONDS: z.coerce.number().int().positive().default(60),
+  ADMIN_EMAILS: z.string().default(""),
   SENTRY_DSN: z.string().url().optional(),
   SENTRY_ENVIRONMENT: z.string().trim().min(1).default("development")
 });
 export const env = envSchema.parse(process.env);
+export const adminEmails = new Set(
+  env.ADMIN_EMAILS.split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean)
+);

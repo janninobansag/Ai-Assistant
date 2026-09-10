@@ -13,6 +13,7 @@ type User = {
   email: string;
   displayName: string;
   preferences?: { theme?: "system" | Theme };
+  isAdmin?: boolean;
 };
 type Subject = { _id: string; name: string };
 type Material = { _id: string; subjectId: string; title: string; characterCount: number };
@@ -66,6 +67,13 @@ type TutorMessage = {
 type Conversation = { id: string; title: string; materialIds: string[]; messages?: TutorMessage[] };
 type SourceExcerpt = { label: string; text: string };
 type DailyUsage = { limit: number; used: number; remaining: number };
+type AdminUser = {
+  id: string;
+  email: string;
+  displayName: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const response = await fetch(`${API}${path}`, {
@@ -94,6 +102,10 @@ export function App() {
   const [online, setOnline] = useState(() => navigator.onLine);
   const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminActionUserId, setAdminActionUserId] = useState("");
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [updateReady, setUpdateReady] = useState(false);
@@ -161,6 +173,7 @@ export function App() {
       if (event.key !== "Escape") return;
       setSettingsOpen(false);
       setPrivacyOpen(false);
+      setAdminOpen(false);
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
@@ -327,8 +340,68 @@ export function App() {
       /* Clear this device even if it is offline. */
     }
     setSettingsOpen(false);
+    setAdminOpen(false);
     setUser(null);
     setToken("");
+  }
+  async function openAdminUsers() {
+    setAdminOpen(true);
+    setAdminLoading(true);
+    try {
+      setAdminUsers(await request<AdminUser[]>("/admin/users", {}, token));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+  async function resetUserPassword(account: AdminUser) {
+    const nextPassword = window.prompt(
+      `Enter a new password for ${account.email} (at least 8 characters).`
+    );
+    if (!nextPassword) return;
+    if (nextPassword.length < 8) {
+      setError("The new password must contain at least 8 characters.");
+      return;
+    }
+    const repeatPassword = window.prompt("Enter the new password again to confirm it.");
+    if (nextPassword !== repeatPassword) {
+      setError("The passwords do not match. No password was changed.");
+      return;
+    }
+    setAdminActionUserId(account.id);
+    try {
+      await request<AdminUser>(
+        `/admin/users/${account.id}/password`,
+        { method: "PATCH", body: JSON.stringify({ password: nextPassword }) },
+        token
+      );
+      window.alert(`Password changed for ${account.email}. Their refresh sessions were revoked.`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setAdminActionUserId("");
+    }
+  }
+  async function deleteUserAsAdmin(account: AdminUser) {
+    const phrase = `DELETE ${account.email}`;
+    const confirmation = window.prompt(
+      `This permanently deletes ${account.email} and all of their study data. Type exactly: ${phrase}`
+    );
+    if (confirmation !== phrase) return;
+    setAdminActionUserId(account.id);
+    try {
+      await request<null>(
+        `/admin/users/${account.id}`,
+        { method: "DELETE", body: JSON.stringify({ confirmation }) },
+        token
+      );
+      setAdminUsers((items) => items.filter((item) => item.id !== account.id));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setAdminActionUserId("");
+    }
   }
   async function toggleTheme() {
     const nextTheme: Theme = theme === "dark" ? "light" : "dark";
@@ -723,7 +796,10 @@ export function App() {
         {settingsOpen && (
           <div
             role="presentation"
-            onMouseDown={() => setSettingsOpen(false)}
+            onMouseDown={() => {
+              setSettingsOpen(false);
+              setAdminOpen(false);
+            }}
             className="fixed inset-0 z-50 flex items-end bg-slate-950/30 p-4 sm:items-center sm:justify-center"
           >
             <section
@@ -747,7 +823,10 @@ export function App() {
                 <button
                   type="button"
                   aria-label="Close settings"
-                  onClick={() => setSettingsOpen(false)}
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    setAdminOpen(false);
+                  }}
                   className="grid h-11 w-11 place-items-center rounded-2xl text-xl text-slate-500"
                 >
                   ×
@@ -792,6 +871,76 @@ export function App() {
                 >
                   Privacy &amp; AI use
                 </button>
+                {user.isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => void openAdminUsers()}
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800"
+                  >
+                    Manage users
+                  </button>
+                )}
+                {adminOpen && (
+                  <section
+                    className="rounded-2xl border border-slate-200 p-3"
+                    aria-label="User administration"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold text-slate-900">User administration</h3>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Password resets revoke refresh sessions. User deletion is permanent.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label="Close user administration"
+                        onClick={() => setAdminOpen(false)}
+                        className="grid h-9 w-9 place-items-center rounded-xl text-lg text-slate-500"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    {adminLoading ? (
+                      <p className="mt-3 text-sm text-slate-500">Loading users…</p>
+                    ) : (
+                      <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
+                        {adminUsers.map((account) => (
+                          <article key={account.id} className="rounded-xl bg-slate-50 p-3">
+                            <p className="break-all text-sm font-semibold text-slate-900">
+                              {account.displayName}
+                              {account.id === user.id ? " (you)" : ""}
+                            </p>
+                            <p className="break-all text-xs text-slate-500">{account.email}</p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                disabled={adminActionUserId === account.id}
+                                onClick={() => void resetUserPassword(account)}
+                                className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 disabled:opacity-50"
+                              >
+                                Reset password
+                              </button>
+                              {account.id !== user.id && (
+                                <button
+                                  type="button"
+                                  disabled={adminActionUserId === account.id}
+                                  onClick={() => void deleteUserAsAdmin(account)}
+                                  className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+                                >
+                                  {adminActionUserId === account.id ? "Working…" : "Delete user"}
+                                </button>
+                              )}
+                            </div>
+                          </article>
+                        ))}
+                        {adminUsers.length === 0 && (
+                          <p className="text-sm text-slate-500">No users found.</p>
+                        )}
+                      </div>
+                    )}
+                  </section>
+                )}
                 <button
                   type="button"
                   onClick={() => void exportAccountData()}

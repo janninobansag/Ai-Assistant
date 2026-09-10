@@ -12,6 +12,7 @@ import summaryRoutes from "./modules/summaries/routes.js";
 import quizRoutes from "./modules/quizzes/routes.js";
 import conversationRoutes from "./modules/conversations/routes.js";
 import usageRoutes from "./modules/usage/routes.js";
+import adminRoutes from "./modules/admin/routes.js";
 import { rateLimit } from "./middleware/rate-limit.js";
 import { collectMetrics, metricsSnapshot } from "./middleware/metrics.js";
 import { reportException } from "./services/observability.js";
@@ -59,6 +60,7 @@ app.use("/api/v1", summaryRoutes);
 app.use("/api/v1", quizRoutes);
 app.use("/api/v1", conversationRoutes);
 app.use("/api/v1", usageRoutes);
+app.use("/api/v1/admin", adminRoutes);
 app.get("/api/v1/dev/fake-summary", async (req, res) => {
   if (env.NODE_ENV === "production") return res.status(404).end();
   const text =
