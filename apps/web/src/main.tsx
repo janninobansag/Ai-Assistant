@@ -107,6 +107,8 @@ export function App() {
   const [booting, setBooting] = useState(true);
   const [online, setOnline] = useState(() => navigator.onLine);
   const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -147,11 +149,21 @@ export function App() {
   const [tutorBusy, setTutorBusy] = useState(false);
   const [sourceExcerpt, setSourceExcerpt] = useState<SourceExcerpt | null>(null);
   const tutorAbort = useRef<AbortController | null>(null);
+  const searchDialog = useRef<HTMLElement | null>(null);
   const settingsDialog = useRef<HTMLElement | null>(null);
   const privacyDialog = useRef<HTMLElement | null>(null);
   const visibleMaterials = selectedSubject
     ? materials.filter((material) => material.subjectId === selectedSubject)
     : materials;
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const matchingSubjects = normalizedSearchQuery
+    ? subjects.filter((subject) => subject.name.toLowerCase().includes(normalizedSearchQuery))
+    : [];
+  const matchingMaterials = normalizedSearchQuery
+    ? materials
+        .filter((material) => material.title.toLowerCase().includes(normalizedSearchQuery))
+        .slice(0, 6)
+    : [];
   useEffect(() => {
     void request<{ accessToken: string }>("/auth/refresh", { method: "POST" })
       .then(async ({ accessToken }) => {
@@ -171,16 +183,19 @@ export function App() {
     if (savedTheme === "dark" || savedTheme === "light") setTheme(savedTheme);
   }, [user?.preferences?.theme]);
   useEffect(() => {
-    const dialog = settingsOpen
-      ? settingsDialog.current
-      : privacyOpen
-        ? privacyDialog.current
-        : null;
+    const dialog = searchOpen
+      ? searchDialog.current
+      : settingsOpen
+        ? settingsDialog.current
+        : privacyOpen
+          ? privacyDialog.current
+          : null;
     dialog?.focus();
-  }, [settingsOpen, privacyOpen]);
+  }, [searchOpen, settingsOpen, privacyOpen]);
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      setSearchOpen(false);
       setSettingsOpen(false);
       setPrivacyOpen(false);
       setAdminOpen(false);
@@ -893,15 +908,26 @@ export function App() {
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                aria-label="Open settings"
-                aria-expanded={settingsOpen}
-                onClick={() => setSettingsOpen(true)}
-                className="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200/70 bg-white/65 text-xl text-slate-700 shadow-sm backdrop-blur-sm"
-              >
-                ⚙
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Search your library"
+                  aria-expanded={searchOpen}
+                  onClick={() => setSearchOpen(true)}
+                  className="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200/70 bg-white/65 text-xl text-slate-700 shadow-sm backdrop-blur-sm"
+                >
+                  <span aria-hidden="true">&#128269;</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Open settings"
+                  aria-expanded={settingsOpen}
+                  onClick={() => setSettingsOpen(true)}
+                  className="grid h-11 w-11 place-items-center rounded-2xl border border-slate-200/70 bg-white/65 text-xl text-slate-700 shadow-sm backdrop-blur-sm"
+                >
+                  ⚙
+                </button>
+              </div>
             </header>
             <div className="relative z-10 mt-16 max-w-2xl sm:mt-20 lg:mt-24">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
@@ -916,6 +942,123 @@ export function App() {
             </div>
           </div>
         </section>
+        {searchOpen && (
+          <div
+            role="presentation"
+            onMouseDown={() => setSearchOpen(false)}
+            className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/30 p-4 pt-20 sm:pt-28"
+          >
+            <section
+              ref={searchDialog}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="search-title"
+              onMouseDown={(event) => event.stopPropagation()}
+              className="w-full max-w-xl rounded-3xl bg-white p-5 shadow-xl"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 id="search-title" className="text-xl font-bold">
+                    Search your library
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">Find a saved subject or material.</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close search"
+                  onClick={() => setSearchOpen(false)}
+                  className="grid h-10 w-10 place-items-center rounded-xl text-xl text-slate-500"
+                >
+                  ×
+                </button>
+              </div>
+              <label className="sr-only" htmlFor="library-search">
+                Search subjects and materials
+              </label>
+              <input
+                id="library-search"
+                autoFocus
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search subjects or materials"
+                className="field mt-5"
+              />
+              {normalizedSearchQuery && (
+                <div className="mt-4 max-h-80 space-y-4 overflow-y-auto pr-1">
+                  {matchingSubjects.length > 0 && (
+                    <section>
+                      <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        Subjects
+                      </h3>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {matchingSubjects.map((subject) => (
+                          <button
+                            key={subject._id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedSubject(subject._id);
+                              setSearchOpen(false);
+                              setSearchQuery("");
+                              window.setTimeout(
+                                () =>
+                                  document
+                                    .getElementById("materials")
+                                    ?.scrollIntoView({ behavior: "smooth" }),
+                                0
+                              );
+                            }}
+                            className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-800"
+                          >
+                            {subject.name}
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                  {matchingMaterials.length > 0 && (
+                    <section>
+                      <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        Materials
+                      </h3>
+                      <div className="mt-2 space-y-2">
+                        {matchingMaterials.map((material) => (
+                          <button
+                            key={material._id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedSubject(material.subjectId);
+                              setSearchOpen(false);
+                              setSearchQuery("");
+                              window.setTimeout(
+                                () =>
+                                  document
+                                    .getElementById("materials")
+                                    ?.scrollIntoView({ behavior: "smooth" }),
+                                0
+                              );
+                            }}
+                            className="flex w-full items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-left ring-1 ring-slate-200"
+                          >
+                            <span className="font-semibold text-slate-900">{material.title}</span>
+                            <span className="text-sm text-slate-500">
+                              {material.characterCount.toLocaleString()} characters
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                  {matchingSubjects.length === 0 && matchingMaterials.length === 0 && (
+                    <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">
+                      No matching subjects or materials.
+                    </p>
+                  )}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
         {settingsOpen && (
           <div
             role="presentation"
@@ -1326,7 +1469,7 @@ export function App() {
           </section>
         </div>
         {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-        <section className="mt-10">
+        <section id="materials" className="mt-10">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">
               {selectedSubject
