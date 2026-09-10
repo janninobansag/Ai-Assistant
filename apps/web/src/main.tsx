@@ -637,6 +637,30 @@ export function App() {
       setRemovingAttemptId("");
     }
   }
+  async function reviewPracticeHistory(item: HistoryItem) {
+    setOpenHistoryMenuId("");
+    setError("");
+    try {
+      const result = await request<{ quiz: Quiz; attempt: Attempt }>(
+        `/practice/history/${item.id}`,
+        {},
+        token
+      );
+      setQuiz(result.quiz);
+      setAttempt(result.attempt);
+      setAnswers(
+        Object.fromEntries(
+          (result.attempt.answers ?? []).map((answer) => [answer.questionId, answer.selectedIndex])
+        )
+      );
+      window.setTimeout(
+        () => document.getElementById("quiz-review")?.scrollIntoView({ behavior: "smooth" }),
+        0
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
   async function openTutor(material: Material) {
     setError("");
     try {
@@ -1506,7 +1530,10 @@ export function App() {
           </section>
         )}
         {quiz && attempt && (
-          <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+          <section
+            id="quiz-review"
+            className="mt-8 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6"
+          >
             <div className="flex items-start justify-between gap-3">
               <h2 className="text-xl font-semibold">{quiz.title}</h2>
               <button
@@ -1744,6 +1771,14 @@ export function App() {
                             aria-label={`Actions for ${item.quiz.title}`}
                             className="absolute right-0 top-12 z-20 w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
                           >
+                            <button
+                              type="button"
+                              role="menuitem"
+                              onClick={() => void reviewPracticeHistory(item)}
+                              className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-brand hover:bg-slate-50"
+                            >
+                              Review results
+                            </button>
                             <button
                               type="button"
                               role="menuitem"
