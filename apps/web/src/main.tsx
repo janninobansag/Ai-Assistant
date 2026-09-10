@@ -901,17 +901,19 @@ export function App() {
             ⚙
           </button>
         </header>
-        <section className="hero-panel mt-7 overflow-hidden rounded-[2rem] p-7 shadow-xl shadow-brand/10 sm:p-10 lg:p-14">
-          <div className="relative z-10 max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
-              Your personal study space
-            </p>
-            <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-              Turn your notes into smarter study sessions!
-            </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-slate-700 sm:text-xl">
-              summaries, quizzes, and AI support in one place.
-            </p>
+        <section className="hero-banner relative left-1/2 mt-7 w-screen -translate-x-1/2 overflow-hidden px-5 py-10 sm:px-7 sm:py-14 lg:px-10 lg:py-16">
+          <div className="mx-auto max-w-7xl">
+            <div className="relative z-10 max-w-2xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
+                Your personal study space
+              </p>
+              <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+                Turn your notes into smarter study sessions!
+              </h1>
+              <p className="mt-5 max-w-xl text-lg leading-8 text-slate-700 sm:text-xl">
+                summaries, quizzes, and AI support in one place.
+              </p>
+            </div>
           </div>
         </section>
         {settingsOpen && (

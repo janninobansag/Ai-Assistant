@@ -123,7 +123,7 @@ button {
 .app-page {
   position: relative;
 }
-.hero-panel {
+.hero-banner {
   position: relative;
   isolation: isolate;
   background-color: #f7f8fb;
@@ -134,15 +134,15 @@ button {
   background-repeat: no-repeat;
   background-size: cover;
 }
-html.dark .hero-panel {
+html.dark .hero-banner {
   background-image:
     linear-gradient(90deg, rgb(15 23 42 / 88%), rgb(15 23 42 / 58%)),
     url("/study-hero-background.png");
 }
-html.dark .hero-panel h1 {
+html.dark .hero-banner h1 {
   color: #f8fafc;
 }
-html.dark .hero-panel p:not(.text-brand) {
+html.dark .hero-banner p:not(.text-brand) {
   color: #dbeafe;
 }
 .app-page::before {
@@ -161,7 +161,7 @@ html.dark .app-page::before {
   background: rgb(167 139 250 / 24%);
 }
 @media (max-width: 1023px) {
-  .hero-panel {
+  .hero-banner {
     background-position:
       center,
       62% center;
