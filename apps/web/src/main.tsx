@@ -800,7 +800,6 @@ export function App() {
                 Study assistant
               </span>
             </div>
-            <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Hi, {user.displayName}</h1>
           </div>
           <button
             type="button"
@@ -850,6 +849,13 @@ export function App() {
                 >
                   ×
                 </button>
+              </div>
+              <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Signed-in account
+                </p>
+                <p className="mt-1 font-semibold text-slate-900">{user.displayName}</p>
+                <p className="break-all text-sm text-slate-600">{user.email}</p>
               </div>
               {dailyUsage && (
                 <p className="mt-5 rounded-2xl bg-blue-50 p-3 text-sm text-blue-950">
@@ -974,6 +980,12 @@ export function App() {
                 >
                   Sign out
                 </button>
+                <a
+                  href="mailto:janninobansag@gmail.com"
+                  className="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-brand"
+                >
+                  Contact support
+                </a>
                 <button
                   type="button"
                   onClick={() => void deleteAccount()}
@@ -1022,26 +1034,26 @@ export function App() {
                 <section>
                   <h3 className="font-semibold text-slate-950">What we store</h3>
                   <p>
-                    Your account details, subjects, study materials, generated summaries and
-                    quizzes, practice history, and tutor conversations are stored so you can return
-                    to them.
+                    We store your account details, subjects, notes, generated summaries, quizzes,
+                    practice history, and tutor conversations so your study library works across
+                    sessions.
                   </p>
                 </section>
                 <section>
                   <h3 className="font-semibold text-slate-950">How AI is used</h3>
                   <p>
-                    When you request a summary, quiz, or tutor answer, the necessary study text is
-                    sent to the configured AI provider. Tutor answers are limited to your selected
-                    material, but AI can still make mistakes—check important information against
-                    your source material.
+                    AI is used only when you ask for a summary, quiz, or tutor answer. The necessary
+                    part of your selected study material is sent to the configured AI provider to
+                    create that response. Always check important information against your original
+                    notes.
                   </p>
                 </section>
                 <section>
                   <h3 className="font-semibold text-slate-950">Your choices</h3>
                   <p>
-                    You can export your stored data or permanently delete your account from
-                    Settings. Deletion removes your account and its related study data from this
-                    application.
+                    You can export your stored data, sign out, or permanently delete your account
+                    from Settings. Account deletion removes your account and related study data from
+                    this application.
                   </p>
                 </section>
                 <section>
@@ -1052,8 +1064,7 @@ export function App() {
                   </p>
                 </section>
                 <p className="rounded-2xl bg-amber-50 p-3 text-amber-900">
-                  Before public release, replace the draft policy details with your legal business
-                  name, contact email, hosting providers, and a reviewed privacy policy.
+                  Questions about your data or this service? Contact janninobansag@gmail.com.
                 </p>
               </div>
             </section>
@@ -1606,6 +1617,15 @@ export function App() {
             )}
           </div>
         </section>
+        <footer className="mt-12 border-t border-slate-200 py-7 text-center text-sm text-slate-500">
+          <p>Study Assistant helps you learn from your own notes.</p>
+          <a
+            href="mailto:janninobansag@gmail.com"
+            className="mt-2 inline-block font-semibold text-brand"
+          >
+            Contact: janninobansag@gmail.com
+          </a>
+        </footer>
       </main>
     </>
   );
