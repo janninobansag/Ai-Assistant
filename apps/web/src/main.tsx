@@ -1273,7 +1273,7 @@ export function App() {
               aria-modal="true"
               aria-labelledby="settings-title"
               onMouseDown={(event) => event.stopPropagation()}
-              className="clean-scrollbar max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-3xl bg-white p-5 pr-3 shadow-xl sm:max-h-[min(86dvh,46rem)]"
+              className="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-3xl bg-white p-5 shadow-xl sm:max-h-[min(86dvh,46rem)]"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -1296,149 +1296,151 @@ export function App() {
                   ×
                 </button>
               </div>
-              <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  Signed-in account
-                </p>
-                <p className="mt-1 font-semibold text-slate-900">{user.displayName}</p>
-                <p className="break-all text-sm text-slate-600">{user.email}</p>
-              </div>
-              {dailyUsage && (
-                <p className="mt-5 rounded-2xl bg-blue-50 p-3 text-sm text-blue-950">
-                  AI points today:{" "}
-                  <strong>
-                    {dailyUsage.remaining} of {dailyUsage.limit} remaining
-                  </strong>
-                </p>
-              )}
-              <div className="mt-4 space-y-2">
-                <button
-                  type="button"
-                  aria-pressed={theme === "dark"}
-                  onClick={() => void toggleTheme()}
-                  className="flex w-full items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800"
-                >
-                  <span>Dark mode</span>
-                  <span className="text-sm font-medium text-slate-500">
-                    {theme === "dark" ? "On" : "Off"}
-                  </span>
-                </button>
-                {installPrompt && (
-                  <button
-                    type="button"
-                    onClick={() => void installApp()}
-                    className="w-full rounded-2xl bg-brand px-4 py-3 text-left font-semibold text-white"
-                  >
-                    Install Study Assistant
-                  </button>
+              <div className="clean-scrollbar mt-5 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-3">
+                <div className="rounded-2xl bg-slate-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Signed-in account
+                  </p>
+                  <p className="mt-1 font-semibold text-slate-900">{user.displayName}</p>
+                  <p className="break-all text-sm text-slate-600">{user.email}</p>
+                </div>
+                {dailyUsage && (
+                  <p className="mt-5 rounded-2xl bg-blue-50 p-3 text-sm text-blue-950">
+                    AI points today:{" "}
+                    <strong>
+                      {dailyUsage.remaining} of {dailyUsage.limit} remaining
+                    </strong>
+                  </p>
                 )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSettingsOpen(false);
-                    setPrivacyOpen(true);
-                  }}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800"
-                >
-                  Privacy &amp; AI use
-                </button>
-                {user.isAdmin && (
+                <div className="mt-4 space-y-2">
                   <button
                     type="button"
-                    onClick={() => void openAdminUsers()}
+                    aria-pressed={theme === "dark"}
+                    onClick={() => void toggleTheme()}
+                    className="flex w-full items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800"
+                  >
+                    <span>Dark mode</span>
+                    <span className="text-sm font-medium text-slate-500">
+                      {theme === "dark" ? "On" : "Off"}
+                    </span>
+                  </button>
+                  {installPrompt && (
+                    <button
+                      type="button"
+                      onClick={() => void installApp()}
+                      className="w-full rounded-2xl bg-brand px-4 py-3 text-left font-semibold text-white"
+                    >
+                      Install Study Assistant
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsOpen(false);
+                      setPrivacyOpen(true);
+                    }}
                     className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800"
                   >
-                    Manage users
+                    Privacy &amp; AI use
                   </button>
-                )}
-                {adminOpen && (
-                  <section
-                    className="rounded-2xl border border-slate-200 p-3"
-                    aria-label="User administration"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="font-semibold text-slate-900">User administration</h3>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Password resets revoke refresh sessions. User deletion is permanent.
-                        </p>
+                  {user.isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => void openAdminUsers()}
+                      className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800"
+                    >
+                      Manage users
+                    </button>
+                  )}
+                  {adminOpen && (
+                    <section
+                      className="rounded-2xl border border-slate-200 p-3"
+                      aria-label="User administration"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold text-slate-900">User administration</h3>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Password resets revoke refresh sessions. User deletion is permanent.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label="Close user administration"
+                          onClick={() => setAdminOpen(false)}
+                          className="grid h-9 w-9 place-items-center rounded-xl text-lg text-slate-500"
+                        >
+                          ×
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        aria-label="Close user administration"
-                        onClick={() => setAdminOpen(false)}
-                        className="grid h-9 w-9 place-items-center rounded-xl text-lg text-slate-500"
-                      >
-                        ×
-                      </button>
-                    </div>
-                    {adminLoading ? (
-                      <p className="mt-3 text-sm text-slate-500">Loading users…</p>
-                    ) : (
-                      <div className="clean-scrollbar mt-3 max-h-72 space-y-2 overflow-y-auto overscroll-contain pr-2">
-                        {adminUsers.map((account) => (
-                          <article key={account.id} className="rounded-xl bg-slate-50 p-3">
-                            <p className="break-all text-sm font-semibold text-slate-900">
-                              {account.displayName}
-                              {account.id === user.id ? " (you)" : ""}
-                            </p>
-                            <p className="break-all text-xs text-slate-500">{account.email}</p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                disabled={adminActionUserId === account.id}
-                                onClick={() => void resetUserPassword(account)}
-                                className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 disabled:opacity-50"
-                              >
-                                Reset password
-                              </button>
-                              {account.id !== user.id && (
+                      {adminLoading ? (
+                        <p className="mt-3 text-sm text-slate-500">Loading users…</p>
+                      ) : (
+                        <div className="clean-scrollbar mt-3 max-h-72 space-y-2 overflow-y-auto overscroll-contain pr-2">
+                          {adminUsers.map((account) => (
+                            <article key={account.id} className="rounded-xl bg-slate-50 p-3">
+                              <p className="break-all text-sm font-semibold text-slate-900">
+                                {account.displayName}
+                                {account.id === user.id ? " (you)" : ""}
+                              </p>
+                              <p className="break-all text-xs text-slate-500">{account.email}</p>
+                              <div className="mt-3 flex flex-wrap gap-2">
                                 <button
                                   type="button"
                                   disabled={adminActionUserId === account.id}
-                                  onClick={() => void deleteUserAsAdmin(account)}
-                                  className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+                                  onClick={() => void resetUserPassword(account)}
+                                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 disabled:opacity-50"
                                 >
-                                  {adminActionUserId === account.id ? "Working…" : "Delete user"}
+                                  Reset password
                                 </button>
-                              )}
-                            </div>
-                          </article>
-                        ))}
-                        {adminUsers.length === 0 && (
-                          <p className="text-sm text-slate-500">No users found.</p>
-                        )}
-                      </div>
-                    )}
-                  </section>
-                )}
-                <button
-                  type="button"
-                  onClick={() => void exportAccountData()}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800"
-                >
-                  Export my data
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void signOut()}
-                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800"
-                >
-                  Sign out
-                </button>
-                <a
-                  href="mailto:janninobansag@gmail.com"
-                  className="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-brand"
-                >
-                  Contact support
-                </a>
-                <button
-                  type="button"
-                  onClick={() => void deleteAccount()}
-                  className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left font-semibold text-red-700"
-                >
-                  Delete account permanently
-                </button>
+                                {account.id !== user.id && (
+                                  <button
+                                    type="button"
+                                    disabled={adminActionUserId === account.id}
+                                    onClick={() => void deleteUserAsAdmin(account)}
+                                    className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+                                  >
+                                    {adminActionUserId === account.id ? "Working…" : "Delete user"}
+                                  </button>
+                                )}
+                              </div>
+                            </article>
+                          ))}
+                          {adminUsers.length === 0 && (
+                            <p className="text-sm text-slate-500">No users found.</p>
+                          )}
+                        </div>
+                      )}
+                    </section>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => void exportAccountData()}
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800"
+                  >
+                    Export my data
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void signOut()}
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-slate-800"
+                  >
+                    Sign out
+                  </button>
+                  <a
+                    href="mailto:janninobansag@gmail.com"
+                    className="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-left font-semibold text-brand"
+                  >
+                    Contact support
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => void deleteAccount()}
+                    className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-left font-semibold text-red-700"
+                  >
+                    Delete account permanently
+                  </button>
+                </div>
               </div>
             </section>
           </div>
