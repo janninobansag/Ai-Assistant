@@ -75,6 +75,11 @@ type AdminUser = {
   createdAt: string;
   updatedAt: string;
 };
+function recommendedQuestionCount(characterCount: number): 5 | 10 | 15 {
+  if (characterCount >= 7_500) return 15;
+  if (characterCount >= 2_500) return 10;
+  return 5;
+}
 
 async function request<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
   const response = await fetch(`${API}${path}`, {
@@ -557,12 +562,13 @@ export function App() {
       loadUsage();
     }
   }
-  async function makeQuiz(materialId: string) {
+  async function makeQuiz(material: Material) {
     setError("");
+    const questionCount = recommendedQuestionCount(material.characterCount);
     try {
       const next = await request<Quiz>(
-        `/materials/${materialId}/quizzes`,
-        { method: "POST", body: JSON.stringify({ questionCount: 5, difficulty: "mixed" }) },
+        `/materials/${material._id}/quizzes`,
+        { method: "POST", body: JSON.stringify({ questionCount, difficulty: "mixed" }) },
         token
       );
       const started = await request<Attempt>(
@@ -1375,11 +1381,11 @@ export function App() {
                             role="menuitem"
                             onClick={() => {
                               setOpenMaterialMenuId("");
-                              void makeQuiz(material._id);
+                              void makeQuiz(material);
                             }}
                             className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-900 hover:bg-slate-50"
                           >
-                            Create quiz
+                            Create {recommendedQuestionCount(material.characterCount)}-question quiz
                           </button>
                           <button
                             type="button"
