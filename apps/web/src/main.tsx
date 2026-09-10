@@ -714,9 +714,17 @@ export function App() {
   if (!user)
     return (
       <main className="app-page mx-auto flex min-h-screen max-w-lg flex-col justify-center px-5 py-10 sm:py-16">
-        <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
-          Study assistant
-        </span>
+        <div className="flex items-center gap-3">
+          <img
+            src="/learnloop-logo.png"
+            alt=""
+            aria-hidden="true"
+            className="h-11 w-11 rounded-2xl object-contain shadow-sm"
+          />
+          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
+            Study assistant
+          </span>
+        </div>
         <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
           Study smarter from your own notes.
         </h1>
@@ -781,9 +789,17 @@ export function App() {
       >
         <header className="flex items-start justify-between">
           <div>
-            <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
-              Study assistant
-            </span>
+            <div className="flex items-center gap-3">
+              <img
+                src="/learnloop-logo.png"
+                alt=""
+                aria-hidden="true"
+                className="h-10 w-10 rounded-2xl object-contain shadow-sm"
+              />
+              <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
+                Study assistant
+              </span>
+            </div>
             <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Hi, {user.displayName}</h1>
           </div>
           <button
