@@ -183,6 +183,8 @@ Use a real ephemeral MongoDB test instance where feasible and the fake AI provid
 
 ## Post-MVP backlog
 
+- [x] Add automatically refreshed active/inactive indicators to the administrator user list.
+- [x] Add a source-grounded "Show answers" material action that detects questions before using AI points.
 - [ ] PDF and DOCX parsing with asynchronous processing.
 - [ ] Image capture and OCR for handwritten or printed notes.
 - [ ] Flashcards and spaced-repetition scheduling.

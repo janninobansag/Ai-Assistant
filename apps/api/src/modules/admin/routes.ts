@@ -9,12 +9,13 @@ import { permanentlyDeleteAccount } from "../../services/accounts/delete-account
 const router = Router();
 const passwordInput = z.object({ password: z.string().min(8).max(128) });
 const deleteInput = z.object({ confirmation: z.string().max(300) });
+const ACTIVE_WINDOW_MS = 90_000;
 
 router.use(requireAuth, requireAdmin);
 
 router.get("/users", async (_req, res) => {
   const users = await User.find({})
-    .select("email displayName createdAt updatedAt")
+    .select("email displayName createdAt updatedAt lastActiveAt")
     .sort({ createdAt: -1 })
     .limit(200)
     .lean();
@@ -24,7 +25,10 @@ router.get("/users", async (_req, res) => {
       email: account.email,
       displayName: account.displayName,
       createdAt: account.createdAt,
-      updatedAt: account.updatedAt
+      updatedAt: account.updatedAt,
+      isActive: account.lastActiveAt
+        ? Date.now() - account.lastActiveAt.getTime() < ACTIVE_WINDOW_MS
+        : false
     })),
     meta: { requestId: null }
   });

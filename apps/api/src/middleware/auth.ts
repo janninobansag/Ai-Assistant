@@ -3,6 +3,9 @@ import { verifyToken } from "../lib/tokens.js";
 import { User } from "../models/user.js";
 import { adminEmails } from "../config/env.js";
 
+const lastSeenWrites = new Map<string, number>();
+const ACTIVITY_WRITE_INTERVAL_MS = 30_000;
+
 declare global {
   namespace Express {
     interface Request {
@@ -24,6 +27,13 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
       .status(401)
       .json({ error: { code: "UNAUTHENTICATED", message: "Sign in required.", requestId: null } });
   req.userId = payload.sub;
+  const now = Date.now();
+  if ((lastSeenWrites.get(payload.sub) ?? 0) + ACTIVITY_WRITE_INTERVAL_MS < now) {
+    lastSeenWrites.set(payload.sub, now);
+    void User.updateOne({ _id: payload.sub }, { $set: { lastActiveAt: new Date(now) } }).catch(
+      () => undefined
+    );
+  }
   return next();
 };
 
