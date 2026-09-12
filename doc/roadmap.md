@@ -183,6 +183,7 @@ Use a real ephemeral MongoDB test instance where feasible and the fake AI provid
 
 ## Post-MVP backlog
 
+- [x] Refine the mobile hero settings control with a compact accessible touch target and clear interaction states.
 - [x] Add a responsive decorative study-library illustration to the dashboard summary card.
 - [x] Add automatically refreshed active/inactive indicators to the administrator user list.
 - [x] Add a "Show answers" material action that detects note questions before using AI points, labels answers not supported by notes, and accepts an optional user-entered question.
