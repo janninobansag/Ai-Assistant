@@ -4,6 +4,8 @@
 
 - [ ] Commit and push the intended branch.
 - [ ] Set production `WEB_ORIGIN` and `VITE_API_URL` to HTTPS URLs.
+- [ ] In Render, set `AI_PROVIDER=hosted`, `HOSTED_AI_PROVIDER=gemini`, a valid `HOSTED_AI_MODEL`, and `GEMINI_API_KEY`. Render does not read the local `.env` file.
+- [ ] After pushing API changes, confirm Render deploys the same Git branch as Vercel, then redeploy it before testing a new API endpoint.
 - [ ] Set long unique token secrets and keep `.env` out of Git.
 - [ ] Configure MongoDB Atlas IP access and a database user with only required privileges.
 - [ ] Enable Atlas backups and record how to restore into a separate test database.

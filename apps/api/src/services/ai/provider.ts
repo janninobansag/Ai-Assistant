@@ -17,7 +17,10 @@ async function gemini(text: string, style: SummaryStyle): Promise<SummaryOutput>
   const response = await hostedFetch(url, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt(text, style) }] }] }),
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt(text, style) }] }],
+      generationConfig: { responseMimeType: "application/json" }
+    }),
     signal: AbortSignal.timeout(30_000)
   });
   const body = (await response.json()) as {
