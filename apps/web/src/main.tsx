@@ -1148,7 +1148,7 @@ export function App() {
                   aria-label="Search your library"
                   aria-expanded={searchOpen}
                   onClick={() => setSearchOpen(true)}
-                  className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200/80 bg-white/75 text-slate-700 shadow-sm backdrop-blur-sm hover:border-brand/30 hover:bg-white hover:text-brand"
+                  className="hero-icon-button grid h-10 w-10 place-items-center rounded-xl border border-slate-200/80 bg-white/75 text-slate-700 shadow-sm backdrop-blur-sm hover:border-brand/30 hover:bg-white hover:text-brand"
                 >
                   <svg
                     aria-hidden="true"
@@ -1167,7 +1167,7 @@ export function App() {
                   aria-label="Open settings"
                   aria-expanded={settingsOpen}
                   onClick={() => setSettingsOpen(true)}
-                  className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200/80 bg-white/85 text-slate-900 shadow-sm backdrop-blur-sm hover:border-slate-400 hover:bg-white"
+                  className="hero-icon-button grid h-10 w-10 place-items-center rounded-xl border border-slate-200/80 bg-white/85 text-slate-900 shadow-sm backdrop-blur-sm hover:border-slate-400 hover:bg-white"
                 >
                   <svg
                     aria-hidden="true"
@@ -1606,7 +1606,7 @@ export function App() {
         )}
         <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
           <div className="space-y-6">
-            <section className="relative overflow-hidden rounded-3xl border border-indigo-300/70 bg-[#3730a3] p-5 text-white shadow-xl shadow-indigo-950/20 ring-1 ring-white/10 sm:p-6">
+            <section className="library-card relative overflow-hidden rounded-3xl border border-indigo-300/70 bg-[#3730a3] p-5 text-white shadow-xl shadow-indigo-950/20 ring-1 ring-white/10 sm:p-6">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-2 rounded-[1.25rem] border border-white/10"
