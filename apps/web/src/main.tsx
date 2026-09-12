@@ -1156,7 +1156,7 @@ export function App() {
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
-                  className="h-5 w-5"
+                    className="h-5 w-5"
                   >
                     <circle cx="11" cy="11" r="6" />
                     <path d="m16 16 4 4" />
@@ -1167,15 +1167,17 @@ export function App() {
                   aria-label="Open settings"
                   aria-expanded={settingsOpen}
                   onClick={() => setSettingsOpen(true)}
-                  className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200/80 bg-white/75 text-slate-700 shadow-sm backdrop-blur-sm hover:border-brand/30 hover:bg-white hover:text-brand"
+                  className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200/80 bg-white/85 text-slate-900 shadow-sm backdrop-blur-sm hover:border-slate-400 hover:bg-white"
                 >
                   <svg
                     aria-hidden="true"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2"
-                  className="h-[1.35rem] w-[1.35rem]"
+                    strokeWidth="1.65"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-6 w-6"
                   >
                     <circle cx="12" cy="12" r="3" />
                     <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V20.3h-3v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7.08 15a1.7 1.7 0 0 0-1.55-1H5.4v-3h.13a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06L8.8 5.94l.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1-1.55V4.7h3v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.55 1h.13v3h-.13a1.7 1.7 0 0 0-1.55 1Z" />
