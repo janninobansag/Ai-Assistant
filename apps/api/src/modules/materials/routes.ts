@@ -27,6 +27,9 @@ const materialInput = z.object({
   formattedText: z.string().max(200000).optional(),
   tags: z.array(z.string().trim().min(1).max(30)).max(10).default([])
 });
+const answerInput = z.object({
+  question: z.string().trim().min(6).max(1000).optional()
+});
 const normalize = (text: string) =>
   text
     .normalize("NFKC")
@@ -198,6 +201,15 @@ router.get("/:materialId/chunks/:chunkId", async (req, res) => {
       });
 });
 router.post("/:materialId/answers", async (req, res) => {
+  const parsed = answerInput.safeParse(req.body ?? {});
+  if (!parsed.success)
+    return res.status(400).json({
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Enter a question between 6 and 1,000 characters.",
+        requestId: null
+      }
+    });
   const owner = userId(req);
   const material = await Material.findOne({
     _id: req.params.materialId,
@@ -208,7 +220,10 @@ router.post("/:materialId/answers", async (req, res) => {
     return res
       .status(404)
       .json({ error: { code: "NOT_FOUND", message: "Material not found.", requestId: null } });
-  const questions = findQuestions(material.normalizedText);
+  const customQuestion = parsed.data.question?.trim();
+  const questions = customQuestion
+    ? [{ question: customQuestion, context: material.normalizedText.slice(0, 12_000) }]
+    : findQuestions(material.normalizedText);
   if (questions.length === 0)
     return res.json({
       data: {
@@ -234,7 +249,9 @@ router.post("/:materialId/answers", async (req, res) => {
     return res.json({
       data: {
         hasQuestions: true,
-        message: `${answers.length} question${answers.length === 1 ? "" : "s"} answered from your notes.`,
+        message: customQuestion
+          ? "Your question has been answered. Answers not supported by the notes are labeled clearly."
+          : `${answers.length} question${answers.length === 1 ? "" : "s"} answered. Answers not supported by the notes are labeled clearly.`,
         answers
       },
       meta: { requestId: null }
