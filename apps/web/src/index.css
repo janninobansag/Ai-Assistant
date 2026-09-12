@@ -198,14 +198,36 @@ html.dark .clean-scrollbar::-webkit-scrollbar-thumb {
 }
 html.dark .hero-banner {
   background-image:
-    linear-gradient(90deg, rgb(15 23 42 / 88%), rgb(15 23 42 / 58%)),
+    linear-gradient(105deg, rgb(8 15 34 / 96%), rgb(18 29 61 / 82%)),
     url("/study-hero-background.png");
 }
 html.dark .hero-banner h1 {
   color: #f8fafc;
 }
 html.dark .hero-banner p:not(.text-brand) {
-  color: #dbeafe;
+  color: #d8e3f7;
+}
+html.dark .hero-icon-button {
+  border-color: rgb(148 163 184 / 28%);
+  background: rgb(15 23 42 / 70%);
+  color: #e2e8f0;
+  box-shadow: 0 10px 24px rgb(2 6 23 / 25%);
+}
+html.dark .hero-icon-button:hover {
+  border-color: rgb(165 180 252 / 55%);
+  background: rgb(30 41 59 / 88%);
+  color: #c7d2fe;
+}
+html.dark .library-card {
+  border-color: rgb(129 140 248 / 45%);
+  background: #26205e;
+  box-shadow: 0 18px 34px rgb(2 6 23 / 35%);
+}
+html.dark .library-card > div {
+  border-color: rgb(199 210 254 / 14%);
+}
+html.dark .library-card .bg-indigo-950\/35 {
+  background-color: rgb(15 23 42 / 55%);
 }
 .app-page::before {
   position: absolute;
