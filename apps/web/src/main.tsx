@@ -188,6 +188,11 @@ export function App() {
         .filter((material) => material.title.toLowerCase().includes(normalizedSearchQuery))
         .slice(0, 6)
     : [];
+  const dailyUsagePercent = dailyUsage
+    ? Math.round(
+        dailyUsage.limit > 0 ? Math.max(0, Math.min(100, (dailyUsage.used / dailyUsage.limit) * 100)) : 0
+      )
+    : 0;
   useEffect(() => {
     void request<{ accessToken: string }>("/auth/refresh", { method: "POST" })
       .then(async ({ accessToken }) => {
@@ -1599,35 +1604,46 @@ export function App() {
         )}
         <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
           <div className="space-y-6">
-            <section className="relative overflow-hidden rounded-3xl bg-brand p-5 text-white shadow-xl shadow-brand/20 sm:p-6">
+            <section className="relative overflow-hidden rounded-3xl border border-indigo-300/70 bg-[#3730a3] p-5 text-white shadow-xl shadow-indigo-950/20 ring-1 ring-white/10 sm:p-6">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-2 rounded-[1.25rem] border border-white/10"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -bottom-20 -left-16 h-44 w-44 rounded-full border border-indigo-200/30"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -bottom-10 -left-6 h-28 w-28 rounded-full border border-indigo-200/20"
+              />
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute right-4 top-4 h-16 w-16 rotate-12 rounded-2xl border border-white/15 sm:right-8"
+              />
               <img
                 src="/study-library-illustration.png"
                 alt=""
                 aria-hidden="true"
-                className="pointer-events-none absolute -right-1 -top-3 h-28 w-28 object-contain opacity-90 drop-shadow-xl sm:right-2 sm:h-36 sm:w-36"
+                className="pointer-events-none absolute -right-1 -top-3 h-28 w-28 object-contain opacity-95 drop-shadow-xl sm:right-2 sm:h-36 sm:w-36"
               />
-              <p className="relative text-sm text-blue-100">Your study library</p>
+              <p className="relative text-sm text-indigo-100">Your study library</p>
               <p className="relative mt-1 text-3xl font-bold">{subjects.length} subjects</p>
-              <p className="relative mt-1 text-blue-100">{materials.length} saved materials</p>
+              <p className="relative mt-1 text-indigo-100">{materials.length} saved materials</p>
               {dailyUsage && (
                 <div className="relative mt-4">
-                  <div className="flex items-center justify-between gap-3 text-sm text-blue-100">
-                    <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgb(110,231,183)]" />
-                      Live AI points
-                    </span>
-                    <span className="font-semibold text-white">
-                      {dailyUsage.remaining} of {dailyUsage.limit} remaining
-                    </span>
+                  <div className="flex items-center justify-between gap-3 text-sm text-indigo-100">
+                    <span>Daily usage</span>
+                    <span className="font-semibold text-white">{dailyUsagePercent}%</span>
                   </div>
                   <div
-                    className="mt-2 h-2 overflow-hidden rounded-full bg-white/25"
-                    aria-label={`${dailyUsage.remaining} of ${dailyUsage.limit} AI points remaining`}
+                    className="mt-2 h-2 overflow-hidden rounded-full border border-white/15 bg-indigo-950/35"
+                    aria-label={`Daily AI usage: ${dailyUsagePercent}%`}
                   >
                     <div
-                      className="h-full rounded-full bg-white transition-all"
+                      className="h-full rounded-full bg-indigo-100 transition-all"
                       style={{
-                        width: `${dailyUsage.limit > 0 ? Math.max(0, Math.min(100, (dailyUsage.remaining / dailyUsage.limit) * 100)) : 0}%`
+                        width: `${dailyUsagePercent}%`
                       }}
                     />
                   </div>
