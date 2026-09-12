@@ -12,6 +12,9 @@ import { Summary } from "../../models/summary.js";
 import { Subject } from "../../models/subject.js";
 import { requireAuth, userId } from "../../middleware/auth.js";
 import { chunkMaterial } from "../../services/materials/chunking.js";
+import { answerQuestions, findQuestions } from "../../services/materials/questions.js";
+import { UsageDaily } from "../../models/usage-daily.js";
+import { env } from "../../config/env.js";
 const router = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -193,6 +196,62 @@ router.get("/:materialId/chunks/:chunkId", async (req, res) => {
     : res.status(404).json({
         error: { code: "NOT_FOUND", message: "Source excerpt not found.", requestId: null }
       });
+});
+router.post("/:materialId/answers", async (req, res) => {
+  const owner = userId(req);
+  const material = await Material.findOne({
+    _id: req.params.materialId,
+    userId: owner,
+    archivedAt: { $exists: false }
+  });
+  if (!material)
+    return res
+      .status(404)
+      .json({ error: { code: "NOT_FOUND", message: "Material not found.", requestId: null } });
+  const questions = findQuestions(material.normalizedText);
+  if (questions.length === 0)
+    return res.json({
+      data: {
+        hasQuestions: false,
+        message: "No questions were found in these notes, so no AI points were used.",
+        answers: []
+      },
+      meta: { requestId: null }
+    });
+  const dateKey = new Date().toISOString().slice(0, 10);
+  const usage = await UsageDaily.findOne({ userId: owner, dateKey });
+  if ((usage?.pointsUsed ?? 0) + 1 > env.DAILY_POINTS_LIMIT)
+    return res.status(429).json({
+      error: { code: "AI_QUOTA_EXCEEDED", message: "Daily AI limit reached.", requestId: null }
+    });
+  await UsageDaily.findOneAndUpdate(
+    { userId: owner, dateKey },
+    { $setOnInsert: { userId: owner, dateKey }, $inc: { pointsUsed: 1, operations: 1 } },
+    { upsert: true }
+  );
+  try {
+    const answers = await answerQuestions(questions);
+    return res.json({
+      data: {
+        hasQuestions: true,
+        message: `${answers.length} question${answers.length === 1 ? "" : "s"} answered from your notes.`,
+        answers
+      },
+      meta: { requestId: null }
+    });
+  } catch (error) {
+    await UsageDaily.updateOne(
+      { userId: owner, dateKey },
+      { $inc: { pointsUsed: -1, operations: -1 } }
+    );
+    return res.status(502).json({
+      error: {
+        code: "AI_OUTPUT_INVALID",
+        message: error instanceof Error ? error.message : "Could not answer questions.",
+        requestId: null
+      }
+    });
+  }
 });
 router.patch("/:materialId", async (req, res) => {
   const parsed = materialInput
