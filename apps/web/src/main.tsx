@@ -77,7 +77,7 @@ type Conversation = { id: string; title: string; materialIds: string[]; messages
 type SourceExcerpt = { label: string; text: string };
 type QuestionAnswer = { question: string; answer: string; supported: boolean };
 type QuestionAnswerResult = { hasQuestions: boolean; message: string; answers: QuestionAnswer[] };
-type DailyUsage = { limit: number; used: number; remaining: number };
+type DailyUsage = { limit: number; used: number; remaining: number; resetsAt: string };
 type AdminUser = {
   id: string;
   email: string;
@@ -86,6 +86,14 @@ type AdminUser = {
   updatedAt: string;
   isActive: boolean;
 };
+
+function formatResetCountdown(resetsAt: string, now: number) {
+  const milliseconds = Math.max(0, new Date(resetsAt).getTime() - now);
+  const totalMinutes = Math.ceil(milliseconds / 60_000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours}h ${minutes}m` : `${Math.max(1, minutes)}m`;
+}
 type NoteFormat = "bold" | "italic" | "underline" | "heading" | "bullet";
 const plainTextToHtml = (text: string) =>
   text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
@@ -121,6 +129,7 @@ export function App() {
   const [booting, setBooting] = useState(true);
   const [online, setOnline] = useState(() => navigator.onLine);
   const [dailyUsage, setDailyUsage] = useState<DailyUsage | null>(null);
+  const [usageClock, setUsageClock] = useState(() => Date.now());
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -193,6 +202,10 @@ export function App() {
         dailyUsage.limit > 0 ? Math.max(0, Math.min(100, (dailyUsage.used / dailyUsage.limit) * 100)) : 0
       )
     : 0;
+  const dailyUsageResetCountdown =
+    dailyUsage && dailyUsage.remaining === 0
+      ? formatResetCountdown(dailyUsage.resetsAt, usageClock)
+      : null;
   useEffect(() => {
     void request<{ accessToken: string }>("/auth/refresh", { method: "POST" })
       .then(async ({ accessToken }) => {
@@ -322,6 +335,11 @@ export function App() {
       window.removeEventListener("online", refreshWhenActive);
     };
   }, [token]);
+  useEffect(() => {
+    if (!dailyUsageResetCountdown) return;
+    const timer = window.setInterval(() => setUsageClock(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, [dailyUsageResetCountdown]);
   const loadHistory = () => {
     if (token)
       void request<HistoryItem[]>("/practice/history", {}, token)
@@ -1649,6 +1667,11 @@ export function App() {
                       }}
                     />
                   </div>
+                  {dailyUsageResetCountdown && (
+                    <p className="mt-2 text-xs font-medium text-indigo-100">
+                      Daily limit reached. Resets in {dailyUsageResetCountdown} (12:00 AM UTC).
+                    </p>
+                  )}
                 </div>
               )}
             </section>
