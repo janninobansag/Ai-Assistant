@@ -183,6 +183,7 @@ Use a real ephemeral MongoDB test instance where feasible and the fake AI provid
 
 ## Post-MVP backlog
 
+- [x] Show a live daily-AI-limit reset countdown when a user has no points remaining.
 - [x] Add a dedicated dark-mode palette for the hero, library card, and header controls.
 - [x] Refine the dashboard library card with an indigo visual system, layered outline details, and a percentage-based daily AI usage meter.
 - [x] Refine the mobile hero settings control with a compact accessible touch target, a classic outlined cog icon, and clear interaction states.
