@@ -8,8 +8,8 @@ function isLocalDevelopmentRequest(req: Parameters<RequestHandler>[0]): boolean 
   if (env.NODE_ENV !== "development") return false;
 
   const hostname = req.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  const ip = req.ip.toLowerCase().replace(/^::ffff:/, "");
-  return loopbackHosts.has(hostname) && loopbackHosts.has(ip);
+  const ip = req.ip?.toLowerCase().replace(/^::ffff:/, "");
+  return Boolean(ip && loopbackHosts.has(hostname) && loopbackHosts.has(ip));
 }
 
 /** In-memory limiter for a single API process. Use a shared store when scaling to multiple instances. */
@@ -27,7 +27,7 @@ export function rateLimit({
     if (isLocalDevelopmentRequest(req)) return next();
 
     const now = Date.now();
-    const key = `${name}:${req.ip}`;
+    const key = `${name}:${req.ip ?? "unknown"}`;
     const current = entries.get(key);
     const entry =
       !current || current.resetAt <= now ? { count: 0, resetAt: now + windowMs } : current;
