@@ -30,7 +30,10 @@ const envSchema = z.object({
   AI_CIRCUIT_BREAKER_FAILURES: z.coerce.number().int().positive().default(3),
   AI_CIRCUIT_BREAKER_COOLDOWN_SECONDS: z.coerce.number().int().positive().default(60),
   ADMIN_EMAILS: z.string().default(""),
-  SENTRY_DSN: z.string().url().optional(),
+  SENTRY_DSN: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().url().optional()
+  ),
   SENTRY_ENVIRONMENT: z.string().trim().min(1).default("development")
 });
 export const env = envSchema.parse(process.env);

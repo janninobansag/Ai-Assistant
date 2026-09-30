@@ -11,8 +11,10 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@study/shared": "0.1.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "gsap": "^3.15.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.1",
@@ -20,13 +22,13 @@
     "vite": "^6.0.7"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
-    "@types/react": "^19.0.3",
-    "@types/react-dom": "^19.0.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
+    "@types/react": "^19.0.3",
+    "@types/react-dom": "^19.0.2",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^25.0.1",
     "postcss": "^8.4.49",
-    "jsdom": "^25.0.1"
+    "typescript": "^5.7.2"
   }
 }

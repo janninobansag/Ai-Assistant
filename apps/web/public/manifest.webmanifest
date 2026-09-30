@@ -1,13 +1,13 @@
 {
-  "name": "Study Assistant",
-  "short_name": "Study",
+  "name": "LearnLoop",
+  "short_name": "LearnLoop",
   "description": "A private, source-grounded AI study assistant.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f7f8fb",
-  "theme_color": "#6d5dfc",
+  "background_color": "#f3f1e9",
+  "theme_color": "#f3f1e9",
   "icons": [
     { "src": "/learnloop-logo.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
     {

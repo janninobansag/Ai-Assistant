@@ -1,6 +1,16 @@
 import type { RequestHandler } from "express";
+import { env } from "../config/env.js";
 
 type Entry = { count: number; resetAt: number };
+const loopbackHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+
+function isLocalDevelopmentRequest(req: Parameters<RequestHandler>[0]): boolean {
+  if (env.NODE_ENV !== "development") return false;
+
+  const hostname = req.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  const ip = req.ip?.toLowerCase().replace(/^::ffff:/, "");
+  return Boolean(ip && loopbackHosts.has(hostname) && loopbackHosts.has(ip));
+}
 
 /** In-memory limiter for a single API process. Use a shared store when scaling to multiple instances. */
 export function rateLimit({
@@ -14,8 +24,10 @@ export function rateLimit({
 }): RequestHandler {
   const entries = new Map<string, Entry>();
   return (req, res, next) => {
+    if (isLocalDevelopmentRequest(req)) return next();
+
     const now = Date.now();
-    const key = `${name}:${req.ip}`;
+    const key = `${name}:${req.ip ?? "unknown"}`;
     const current = entries.get(key);
     const entry =
       !current || current.resetAt <= now ? { count: 0, resetAt: now + windowMs } : current;

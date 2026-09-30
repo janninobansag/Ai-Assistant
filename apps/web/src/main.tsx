@@ -7,10 +7,19 @@ import {
   useRef,
   useState
 } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:4000/api/v1";
+if (typeof window !== "undefined" && typeof Reflect.get(window, "matchMedia") === "function") {
+  gsap.registerPlugin(useGSAP, ScrollTrigger);
+}
+
+const API =
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.PROD ? "/api/v1" : "http://localhost:4000/api/v1");
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
@@ -199,7 +208,9 @@ export function App() {
     : [];
   const dailyUsagePercent = dailyUsage
     ? Math.round(
-        dailyUsage.limit > 0 ? Math.max(0, Math.min(100, (dailyUsage.used / dailyUsage.limit) * 100)) : 0
+        dailyUsage.limit > 0
+          ? Math.max(0, Math.min(100, (dailyUsage.used / dailyUsage.limit) * 100))
+          : 0
       )
     : 0;
   const dailyUsageResetCountdown =
@@ -347,6 +358,86 @@ export function App() {
         .catch((e: Error) => setError(e.message));
   };
   useEffect(loadHistory, [token]);
+  useGSAP(
+    () => {
+      if (
+        booting ||
+        typeof window === "undefined" ||
+        typeof Reflect.get(window, "matchMedia") !== "function"
+      )
+        return;
+
+      const motion = gsap.matchMedia();
+      motion.add("(prefers-reduced-motion: no-preference)", () => {
+        const hero = document.querySelector<HTMLElement>(".hero-banner");
+        const heroArt = hero?.querySelector<HTMLElement>(".hero-art");
+        const titleLines = hero?.querySelectorAll<HTMLElement>(".hero-title__line");
+
+        if (hero && heroArt) {
+          gsap.to(heroArt, {
+            scale: 0.88,
+            opacity: 0.18,
+            ease: "none",
+            scrollTrigger: {
+              trigger: hero,
+              start: "top top",
+              end: "bottom top",
+              scrub: true
+            }
+          });
+        }
+
+        if (hero && titleLines?.length) {
+          gsap.fromTo(
+            titleLines,
+            { opacity: 0.72, y: 10 },
+            {
+              opacity: 1,
+              y: 0,
+              stagger: 0.12,
+              ease: "none",
+              scrollTrigger: {
+                trigger: hero,
+                start: "top 78%",
+                end: "center 30%",
+                scrub: 0.6
+              }
+            }
+          );
+        }
+
+        const shelf = document.querySelector<HTMLElement>(".study-shelf");
+        const materialsSection = document.querySelector<HTMLElement>("#materials");
+        if (shelf && materialsSection && window.matchMedia("(min-width: 1200px)").matches) {
+          ScrollTrigger.create({
+            trigger: shelf,
+            start: "top top+=24",
+            endTrigger: materialsSection,
+            end: "top top+=112",
+            pin: shelf,
+            pinSpacing: false,
+            anticipatePin: 1,
+            invalidateOnRefresh: true
+          });
+        }
+
+        const authNotes = gsap.utils.toArray<HTMLElement>(".auth-note-scene__sheet");
+        if (authNotes.length) {
+          gsap.from(authNotes, {
+            autoAlpha: 0,
+            y: 24,
+            rotate: 0,
+            stagger: 0.12,
+            duration: 0.8,
+            ease: "power3.out"
+          });
+        }
+      });
+
+      return () => motion.revert();
+    },
+    { dependencies: [booting, user?.id], revertOnUpdate: true }
+  );
   useEffect(() => {
     if (!attempt || attempt.status === "submitted") return;
     const timer = window.setTimeout(() => {
@@ -1064,75 +1155,134 @@ export function App() {
   }
   if (booting)
     return (
-      <main className="app-page mx-auto flex min-h-screen max-w-lg items-center justify-center px-5">
-        <p className="text-slate-500">Restoring your study session...</p>
+      <main className="app-page loading-page" role="status" aria-live="polite">
+        <span className="loading-mark" aria-hidden="true">
+          <img src="/learnloop-logo.png" alt="" />
+        </span>
+        <p>Restoring your study session...</p>
+        <span className="loading-line" aria-hidden="true" />
       </main>
     );
   if (!user)
     return (
-      <main className="app-page mx-auto flex min-h-screen max-w-lg flex-col justify-center px-5 py-10 sm:py-16">
-        <div className="flex items-center gap-3">
-          <img
-            src="/learnloop-logo.png"
-            alt=""
-            aria-hidden="true"
-            className="h-11 w-11 rounded-2xl object-contain shadow-sm"
-          />
-          <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
-            Study assistant
-          </span>
-        </div>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
-          Study smarter from your own notes.
-        </h1>
-        <p className="mt-3 text-slate-600">
-          Create a private library for summaries, quizzes, and tutor conversations.
-        </p>
-        <form
-          onSubmit={authenticate}
-          className="mt-8 space-y-3 rounded-3xl bg-white p-5 shadow-xl shadow-slate-200/60 ring-1 ring-slate-200 sm:p-6"
-        >
-          <h2 className="text-xl font-semibold">
-            {mode === "register" ? "Create your account" : "Welcome back"}
-          </h2>
-          {mode === "register" && (
-            <input
-              required
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Display name"
-              className="field"
-            />
-          )}
-          <input
-            required
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className="field"
-          />
-          <input
-            required
-            minLength={8}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password (8+ characters)"
-            className="field"
-          />
-          {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-          <button className="w-full rounded-2xl bg-brand px-5 py-4 font-semibold text-white">
-            {mode === "register" ? "Get started" : "Sign in"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode(mode === "register" ? "login" : "register")}
-            className="w-full py-2 text-sm font-semibold text-brand"
-          >
-            {mode === "register" ? "I already have an account" : "Create an account"}
-          </button>
-        </form>
+      <main className="app-page auth-page">
+        <section className="auth-story">
+          <a className="auth-brand" href="/" aria-label="LearnLoop home">
+            <img src="/learnloop-logo.png" alt="" aria-hidden="true" />
+            <span>LearnLoop</span>
+          </a>
+          <div className="auth-story__copy">
+            <p className="auth-eyebrow">A calmer way to study</p>
+            <h1 className="auth-title">
+              Make what you learn{" "}
+              <span className="auth-inline-mark">
+                <img src="/learnloop-logo.png" alt="" aria-hidden="true" />
+              </span>{" "}
+              stay with you.
+            </h1>
+            <p className="auth-description">
+              Keep your notes close. Turn them into clear summaries, useful practice, and tutor
+              conversations grounded in your own material.
+            </p>
+          </div>
+          <div className="auth-note-scene" aria-hidden="true">
+            <div className="auth-note-scene__sheet auth-note-scene__sheet--back">
+              <span className="auth-note-scene__rule" />
+              <span className="auth-note-scene__rule" />
+              <span className="auth-note-scene__rule auth-note-scene__rule--short" />
+            </div>
+            <div className="auth-note-scene__sheet auth-note-scene__sheet--front">
+              <span className="auth-note-scene__label">A note worth keeping</span>
+              <strong>
+                Understand it.
+                <br />
+                Then remember it.
+              </strong>
+              <span className="auth-note-scene__rule" />
+              <span className="auth-note-scene__rule auth-note-scene__rule--short" />
+            </div>
+          </div>
+          <div className="auth-marquee" aria-hidden="true">
+            <div className="auth-marquee__track">
+              {[0, 1].map((copy) => (
+                <span className="auth-marquee__group" key={copy}>
+                  <span>Save a useful thought</span>
+                  <span>Build a clear summary</span>
+                  <span>Practice what you know</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="auth-side" aria-labelledby="auth-title">
+          <div className="auth-form-shell">
+            <p className="auth-eyebrow">Your study space starts here</p>
+            <h2 id="auth-title" className="auth-form-title">
+              {mode === "register" ? "Create your account" : "Welcome back"}
+            </h2>
+            <p className="auth-form-description">
+              {mode === "register"
+                ? "A private library for the material you want to remember."
+                : "Pick up where your notes left off."}
+            </p>
+            <form onSubmit={authenticate} className="auth-form">
+              {mode === "register" && (
+                <label className="auth-field-wrap">
+                  <span>Your name</span>
+                  <input
+                    required
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Display name"
+                    autoComplete="name"
+                    className="field"
+                  />
+                </label>
+              )}
+              <label className="auth-field-wrap">
+                <span>Email address</span>
+                <input
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  autoComplete="email"
+                  className="field"
+                />
+              </label>
+              <label className="auth-field-wrap">
+                <span>Password</span>
+                <input
+                  required
+                  minLength={8}
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password (8+ characters)"
+                  autoComplete={mode === "register" ? "new-password" : "current-password"}
+                  className="field"
+                />
+              </label>
+              {error && (
+                <p role="alert" className="auth-error">
+                  {error}
+                </p>
+              )}
+              <button className="auth-submit w-full rounded-2xl bg-brand px-5 py-4 font-semibold text-white">
+                {mode === "register" ? "Create account" : "Sign in"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode(mode === "register" ? "login" : "register")}
+                className="auth-switch w-full py-2 text-sm font-semibold text-brand"
+              >
+                {mode === "register" ? "I already have an account" : "Create an account"}
+              </button>
+            </form>
+            <p className="auth-privacy-note">Your library stays private to your account.</p>
+          </div>
+        </section>
       </main>
     );
   return (
@@ -1144,22 +1294,17 @@ export function App() {
         id="main-content"
         className="app-page mx-auto min-h-screen max-w-7xl px-5 pb-12 pt-0 sm:px-7 sm:pt-0 lg:px-10"
       >
-        <section className="hero-banner relative left-1/2 w-screen -translate-x-1/2 overflow-hidden px-5 pb-10 pt-8 sm:px-7 sm:pb-14 sm:pt-12 lg:px-10 lg:pb-16">
+        <section className="hero-banner relative left-1/2 w-screen -translate-x-1/2 overflow-hidden px-5 pb-10 pt-6 sm:px-7 sm:pb-14 sm:pt-8 lg:px-10 lg:pb-16">
           <div className="mx-auto max-w-7xl">
-            <header className="relative z-10 flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-3">
-                  <img
-                    src="/learnloop-logo.png"
-                    alt=""
-                    aria-hidden="true"
-                    className="h-10 w-10 rounded-2xl object-contain shadow-sm"
-                  />
-                  <span className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
-                    Study assistant
-                  </span>
-                </div>
-              </div>
+            <header className="hero-header relative z-10 flex items-center justify-between gap-4">
+              <a className="dashboard-brand" href="/" aria-label="LearnLoop home">
+                <img src="/learnloop-logo.png" alt="" aria-hidden="true" />
+                <span>LearnLoop</span>
+              </a>
+              <nav className="study-nav" aria-label="Study navigation">
+                <a href="#materials">Library</a>
+                <a href="#practice-history">Practice</a>
+              </nav>
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
@@ -1203,19 +1348,64 @@ export function App() {
                 </button>
               </div>
             </header>
-            <div className="relative z-10 mt-16 max-w-2xl sm:mt-20 lg:mt-24">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-brand">
-                Your personal study space
-              </p>
-              <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                Turn your notes into smarter study sessions!
-              </h1>
-              <p className="mt-5 max-w-xl text-lg leading-8 text-slate-700 sm:text-xl">
-                summaries, quizzes, and AI support in one place.
-              </p>
+            <div className="dashboard-hero">
+              <div className="hero-copy relative z-10">
+                <p className="hero-eyebrow">Your personal study space</p>
+                <h1 className="hero-title">
+                  <span className="hero-title__line">Make your notes</span>
+                  <span className="hero-title__line">
+                    <img
+                      src="/learnloop-logo.png"
+                      alt=""
+                      aria-hidden="true"
+                      className="hero-title__mark"
+                    />
+                    work harder.
+                  </span>
+                </h1>
+                <p className="hero-lede">
+                  Keep the useful details. Build a summary, test your memory, and ask questions from
+                  your own notes.
+                </p>
+                <div className="hero-actions">
+                  <a className="hero-action hero-action--primary" href="#add-material">
+                    Add study material
+                  </a>
+                  <a className="hero-action hero-action--secondary" href="#materials">
+                    Open your library
+                  </a>
+                </div>
+              </div>
+              <div className="hero-art" aria-hidden="true">
+                <div className="hero-art__back-sheet" />
+                <div className="hero-art__page">
+                  <p>FIELD NOTES</p>
+                  <strong>
+                    Read it.
+                    <br />
+                    Recall it.
+                  </strong>
+                  <span />
+                  <span />
+                  <span />
+                  <i />
+                </div>
+                <div className="hero-art__margin-note">LearnLoop / your space</div>
+              </div>
             </div>
           </div>
         </section>
+        <div className="study-ticker" aria-hidden="true">
+          <div className="study-ticker__track">
+            {[0, 1].map((copy) => (
+              <span className="study-ticker__group" key={copy}>
+                <span>Keep your own notes</span>
+                <span>Build clear summaries</span>
+                <span>Practice with purpose</span>
+              </span>
+            ))}
+          </div>
+        </div>
         {searchOpen && (
           <div
             role="presentation"
@@ -1406,7 +1596,7 @@ export function App() {
                       onClick={() => void installApp()}
                       className="w-full rounded-2xl bg-brand px-4 py-3 text-left font-semibold text-white"
                     >
-                      Install Study Assistant
+                      Install LearnLoop
                     </button>
                   )}
                   <button
@@ -1550,7 +1740,7 @@ export function App() {
                     Privacy &amp; AI use
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    How Study Assistant handles your study data.
+                    How LearnLoop handles your study data.
                   </p>
                 </div>
                 <button
@@ -1591,7 +1781,7 @@ export function App() {
                 <section>
                   <h3 className="font-semibold text-slate-950">Important</h3>
                   <p>
-                    Study Assistant is for learning support. It is not medical, legal, financial, or
+                    LearnLoop is for learning support. It is not medical, legal, financial, or
                     professional advice.
                   </p>
                 </section>
@@ -1622,53 +1812,47 @@ export function App() {
             </button>
           </p>
         )}
-        <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
-          <div className="space-y-6">
-            <section className="library-card relative overflow-hidden rounded-3xl border border-indigo-300/70 bg-[#3730a3] p-5 text-white shadow-xl shadow-indigo-950/20 ring-1 ring-white/10 sm:p-6">
+        <div className="study-layout mt-7 grid grid-flow-dense grid-cols-1 gap-7 lg:grid-cols-12 lg:gap-8">
+          <div className="study-shelf lg:col-span-5">
+            <section className="library-card relative overflow-hidden rounded-3xl p-5 text-white sm:p-6">
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-2 rounded-[1.25rem] border border-white/10"
               />
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -bottom-20 -left-16 h-44 w-44 rounded-full border border-indigo-200/30"
+                className="pointer-events-none absolute -bottom-20 -left-16 h-44 w-44 rounded-full border border-white/15"
               />
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -bottom-10 -left-6 h-28 w-28 rounded-full border border-indigo-200/20"
+                className="pointer-events-none absolute -bottom-10 -left-6 h-28 w-28 rounded-full border border-white/10"
               />
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute right-4 top-4 h-16 w-16 rotate-12 rounded-2xl border border-white/15 sm:right-8"
               />
-              <img
-                src="/study-library-illustration.png"
-                alt=""
-                aria-hidden="true"
-                className="pointer-events-none absolute -right-1 -top-3 h-28 w-28 object-contain opacity-95 drop-shadow-xl sm:right-2 sm:h-36 sm:w-36"
-              />
-              <p className="relative text-sm text-indigo-100">Your study library</p>
+              <p className="relative text-sm text-slate-100">Your study library</p>
               <p className="relative mt-1 text-3xl font-bold">{subjects.length} subjects</p>
-              <p className="relative mt-1 text-indigo-100">{materials.length} saved materials</p>
+              <p className="relative mt-1 text-slate-100">{materials.length} saved materials</p>
               {dailyUsage && (
                 <div className="relative mt-4">
-                  <div className="flex items-center justify-between gap-3 text-sm text-indigo-100">
+                  <div className="flex items-center justify-between gap-3 text-sm text-slate-100">
                     <span>Daily usage</span>
                     <span className="font-semibold text-white">{dailyUsagePercent}%</span>
                   </div>
                   <div
-                    className="mt-2 h-2 overflow-hidden rounded-full border border-white/15 bg-indigo-950/35"
+                    className="daily-usage-track mt-2 h-2 overflow-hidden rounded-full border border-white/15"
                     aria-label={`Daily AI usage: ${dailyUsagePercent}%`}
                   >
                     <div
-                      className="h-full rounded-full bg-indigo-100 transition-all"
+                      className="daily-usage-progress h-full rounded-full transition-all"
                       style={{
                         width: `${dailyUsagePercent}%`
                       }}
                     />
                   </div>
                   {dailyUsageResetCountdown && (
-                    <p className="mt-2 text-xs font-medium text-indigo-100">
+                    <p className="mt-2 text-xs font-medium text-slate-100">
                       Daily limit reached. Resets in {dailyUsageResetCountdown} (12:00 AM UTC).
                     </p>
                   )}
@@ -1693,22 +1877,26 @@ export function App() {
                   Add
                 </button>
               </form>
-              <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="subject-accordion mt-3">
                 {subjects.length === 0 && (
-                  <p className="col-span-2 rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+                  <p className="subject-accordion__empty rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
                     No subjects yet. Add your first subject above.
                   </p>
                 )}
                 {subjects.map((subject) => (
                   <div
                     key={subject._id}
-                    className={`relative rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 ${selectedSubject === subject._id ? "ring-2 ring-brand" : ""}`}
+                    className={`subject-accordion__item relative rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 ${selectedSubject === subject._id ? "is-selected ring-2 ring-brand" : ""}`}
                   >
                     <button
                       type="button"
+                      aria-pressed={selectedSubject === subject._id}
                       onClick={() => setSelectedSubject(subject._id)}
-                      className="w-full rounded-2xl p-4 pr-12 text-left"
+                      className="subject-accordion__select w-full rounded-2xl p-4 pr-12 text-left"
                     >
+                      <span className="subject-accordion__initial" aria-hidden="true">
+                        {subject.name.slice(0, 1).toUpperCase()}
+                      </span>
                       <span className="block truncate font-semibold">{subject.name}</span>
                     </button>
                     <div data-action-menu className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -1771,7 +1959,10 @@ export function App() {
               </div>
             </section>
           </div>
-          <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+          <section
+            id="add-material"
+            className="material-composer rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:col-span-7"
+          >
             <h2 className="text-xl font-semibold">Add study material</h2>
             <p className="mt-1 text-sm text-slate-500">
               Choose a subject, then paste at least 100 characters of notes.
@@ -1866,7 +2057,7 @@ export function App() {
           </section>
         </div>
         {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-        <section id="materials" className="mt-10">
+        <section id="materials" className="materials-section mt-10">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">
               {selectedSubject
@@ -1892,9 +2083,9 @@ export function App() {
               </p>
             )}
             {visibleMaterials.map((material) => (
-              <div
+              <article
                 key={material._id}
-                className="min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+                className="material-card min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
               >
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                   <div className="min-w-0 overflow-hidden">
@@ -1996,7 +2187,7 @@ export function App() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </section>
@@ -2446,7 +2637,7 @@ export function App() {
             </form>
           </section>
         )}
-        <section className="mt-8">
+        <section id="practice-history" className="history-section mt-8">
           <h2 className="text-xl font-semibold">Practice history</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {history.length === 0 ? (
@@ -2455,7 +2646,10 @@ export function App() {
               </p>
             ) : (
               history.map((item) => (
-                <article key={item.id} className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                <article
+                  key={item.id}
+                  className="history-card rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-semibold">{item.quiz.title}</p>
@@ -2520,7 +2714,7 @@ export function App() {
           </div>
         </section>
         <footer className="mt-12 border-t border-slate-200 py-7 text-center text-sm text-slate-500">
-          <p>Study Assistant helps you learn from your own notes.</p>
+          <p>LearnLoop helps you learn from your own notes.</p>
           <a
             href="mailto:janninobansag@gmail.com"
             className="mt-2 inline-block font-semibold text-brand"
