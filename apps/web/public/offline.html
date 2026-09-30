@@ -1,1 +1,67 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#4263eb"><title>Offline · Study Assistant</title><style>body{margin:0;min-width:320px;background:#f7f8fb;color:#17212b;font-family:system-ui,sans-serif}main{max-width:420px;margin:18vh auto;padding:24px;text-align:center}h1{font-size:1.7rem}p{line-height:1.5;color:#475569}button{border:0;border-radius:14px;background:#4263eb;color:#fff;font:inherit;font-weight:700;padding:12px 20px}</style></head><body><main><h1>You’re offline</h1><p>Reconnect to the internet, then try again. Your private study data is never stored in the app cache.</p><button onclick="location.reload()">Try again</button></main></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#f3f1e9" />
+    <title>Offline · LearnLoop</title>
+    <style>
+      :root {
+        font-family:
+          Geist,
+          Aptos,
+          Segoe UI,
+          system-ui,
+          sans-serif;
+        color: #202923;
+        background: #f3f1e9;
+      }
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100dvh;
+        background: radial-gradient(ellipse at 50% 0%, #dfe7fa, transparent 28rem), #f3f1e9;
+      }
+      main {
+        max-width: 30rem;
+        margin: 18vh auto;
+        padding: 2rem;
+        text-align: center;
+      }
+      h1 {
+        font-size: clamp(1.8rem, 7vw, 2.6rem);
+        letter-spacing: -0.06em;
+      }
+      p {
+        line-height: 1.7;
+        color: #536158;
+      }
+      button {
+        border: 0;
+        border-radius: 0.8rem;
+        background: #202923;
+        color: #fff;
+        font: inherit;
+        font-weight: 650;
+        padding: 0.85rem 1.3rem;
+        transition:
+          transform 0.24s ease,
+          background-color 0.24s ease;
+      }
+      button:hover {
+        transform: translateY(-2px);
+        background: #244aa8;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>You’re offline</h1>
+      <p>
+        Reconnect to the internet, then try again. Your private study data is never stored in the
+        app cache.
+      </p>
+      <button onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>
