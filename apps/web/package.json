@@ -11,10 +11,8 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@gsap/react": "^2.1.2",
     "@study/shared": "0.1.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "gsap": "^3.15.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.1",

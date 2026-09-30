@@ -1,4 +1,4 @@
-const CACHE = "study-shell-v4";
+const CACHE = "study-shell-v5";
 const SHELL = ["/", "/offline.html", "/manifest.webmanifest", "/learnloop-logo.png"];
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));

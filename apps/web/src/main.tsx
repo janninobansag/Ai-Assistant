@@ -7,15 +7,8 @@ import {
   useRef,
   useState
 } from "react";
-import { useGSAP } from "@gsap/react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-
-if (typeof window !== "undefined" && typeof Reflect.get(window, "matchMedia") === "function") {
-  gsap.registerPlugin(useGSAP, ScrollTrigger);
-}
 
 const API =
   import.meta.env.VITE_API_URL ??
@@ -206,13 +199,6 @@ export function App() {
         .filter((material) => material.title.toLowerCase().includes(normalizedSearchQuery))
         .slice(0, 6)
     : [];
-  const dailyUsagePercent = dailyUsage
-    ? Math.round(
-        dailyUsage.limit > 0
-          ? Math.max(0, Math.min(100, (dailyUsage.used / dailyUsage.limit) * 100))
-          : 0
-      )
-    : 0;
   const dailyUsageResetCountdown =
     dailyUsage && dailyUsage.remaining === 0
       ? formatResetCountdown(dailyUsage.resetsAt, usageClock)
@@ -358,86 +344,6 @@ export function App() {
         .catch((e: Error) => setError(e.message));
   };
   useEffect(loadHistory, [token]);
-  useGSAP(
-    () => {
-      if (
-        booting ||
-        typeof window === "undefined" ||
-        typeof Reflect.get(window, "matchMedia") !== "function"
-      )
-        return;
-
-      const motion = gsap.matchMedia();
-      motion.add("(prefers-reduced-motion: no-preference)", () => {
-        const hero = document.querySelector<HTMLElement>(".hero-banner");
-        const heroArt = hero?.querySelector<HTMLElement>(".hero-art");
-        const titleLines = hero?.querySelectorAll<HTMLElement>(".hero-title__line");
-
-        if (hero && heroArt) {
-          gsap.to(heroArt, {
-            scale: 0.88,
-            opacity: 0.18,
-            ease: "none",
-            scrollTrigger: {
-              trigger: hero,
-              start: "top top",
-              end: "bottom top",
-              scrub: true
-            }
-          });
-        }
-
-        if (hero && titleLines?.length) {
-          gsap.fromTo(
-            titleLines,
-            { opacity: 0.72, y: 10 },
-            {
-              opacity: 1,
-              y: 0,
-              stagger: 0.12,
-              ease: "none",
-              scrollTrigger: {
-                trigger: hero,
-                start: "top 78%",
-                end: "center 30%",
-                scrub: 0.6
-              }
-            }
-          );
-        }
-
-        const shelf = document.querySelector<HTMLElement>(".study-shelf");
-        const materialsSection = document.querySelector<HTMLElement>("#materials");
-        if (shelf && materialsSection && window.matchMedia("(min-width: 1200px)").matches) {
-          ScrollTrigger.create({
-            trigger: shelf,
-            start: "top top+=24",
-            endTrigger: materialsSection,
-            end: "top top+=112",
-            pin: shelf,
-            pinSpacing: false,
-            anticipatePin: 1,
-            invalidateOnRefresh: true
-          });
-        }
-
-        const authNotes = gsap.utils.toArray<HTMLElement>(".auth-note-scene__sheet");
-        if (authNotes.length) {
-          gsap.from(authNotes, {
-            autoAlpha: 0,
-            y: 24,
-            rotate: 0,
-            stagger: 0.12,
-            duration: 0.8,
-            ease: "power3.out"
-          });
-        }
-      });
-
-      return () => motion.revert();
-    },
-    { dependencies: [booting, user?.id], revertOnUpdate: true }
-  );
   useEffect(() => {
     if (!attempt || attempt.status === "submitted") return;
     const timer = window.setTimeout(() => {
@@ -1172,58 +1078,22 @@ export function App() {
             <span>LearnLoop</span>
           </a>
           <div className="auth-story__copy">
-            <p className="auth-eyebrow">A calmer way to study</p>
-            <h1 className="auth-title">
-              Make what you learn{" "}
-              <span className="auth-inline-mark">
-                <img src="/learnloop-logo.png" alt="" aria-hidden="true" />
-              </span>{" "}
-              stay with you.
-            </h1>
+            <h1 className="auth-title">Study from your own notes.</h1>
             <p className="auth-description">
-              Keep your notes close. Turn them into clear summaries, useful practice, and tutor
-              conversations grounded in your own material.
+              Save class notes by subject, make summaries and quizzes, and ask questions about the
+              material you saved.
             </p>
-          </div>
-          <div className="auth-note-scene" aria-hidden="true">
-            <div className="auth-note-scene__sheet auth-note-scene__sheet--back">
-              <span className="auth-note-scene__rule" />
-              <span className="auth-note-scene__rule" />
-              <span className="auth-note-scene__rule auth-note-scene__rule--short" />
-            </div>
-            <div className="auth-note-scene__sheet auth-note-scene__sheet--front">
-              <span className="auth-note-scene__label">A note worth keeping</span>
-              <strong>
-                Understand it.
-                <br />
-                Then remember it.
-              </strong>
-              <span className="auth-note-scene__rule" />
-              <span className="auth-note-scene__rule auth-note-scene__rule--short" />
-            </div>
-          </div>
-          <div className="auth-marquee" aria-hidden="true">
-            <div className="auth-marquee__track">
-              {[0, 1].map((copy) => (
-                <span className="auth-marquee__group" key={copy}>
-                  <span>Save a useful thought</span>
-                  <span>Build a clear summary</span>
-                  <span>Practice what you know</span>
-                </span>
-              ))}
-            </div>
           </div>
         </section>
         <section className="auth-side" aria-labelledby="auth-title">
           <div className="auth-form-shell">
-            <p className="auth-eyebrow">Your study space starts here</p>
             <h2 id="auth-title" className="auth-form-title">
               {mode === "register" ? "Create your account" : "Welcome back"}
             </h2>
             <p className="auth-form-description">
               {mode === "register"
-                ? "A private library for the material you want to remember."
-                : "Pick up where your notes left off."}
+                ? "Create an account to save your notes and practice."
+                : "Sign in to open your saved notes and practice."}
             </p>
             <form onSubmit={authenticate} className="auth-form">
               {mode === "register" && (
@@ -1292,120 +1162,72 @@ export function App() {
       </a>
       <main
         id="main-content"
-        className="app-page mx-auto min-h-screen max-w-7xl px-5 pb-12 pt-0 sm:px-7 sm:pt-0 lg:px-10"
+        className="app-page mx-auto min-h-[100dvh] max-w-7xl px-5 pb-12 pt-0 sm:px-7 lg:px-10"
       >
-        <section className="hero-banner relative left-1/2 w-screen -translate-x-1/2 overflow-hidden px-5 pb-10 pt-6 sm:px-7 sm:pb-14 sm:pt-8 lg:px-10 lg:pb-16">
-          <div className="mx-auto max-w-7xl">
-            <header className="hero-header relative z-10 flex items-center justify-between gap-4">
-              <a className="dashboard-brand" href="/" aria-label="LearnLoop home">
-                <img src="/learnloop-logo.png" alt="" aria-hidden="true" />
-                <span>LearnLoop</span>
-              </a>
-              <nav className="study-nav" aria-label="Study navigation">
-                <a href="#materials">Library</a>
-                <a href="#practice-history">Practice</a>
-              </nav>
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  aria-label="Search your library"
-                  aria-expanded={searchOpen}
-                  onClick={() => setSearchOpen(true)}
-                  className="hero-icon-button grid h-10 w-10 place-items-center rounded-xl border border-slate-200/80 bg-white/75 text-slate-700 shadow-sm backdrop-blur-sm hover:border-brand/30 hover:bg-white hover:text-brand"
-                >
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="h-5 w-5"
-                  >
-                    <circle cx="11" cy="11" r="6" />
-                    <path d="m16 16 4 4" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  aria-label="Open settings"
-                  aria-expanded={settingsOpen}
-                  onClick={() => setSettingsOpen(true)}
-                  className="hero-icon-button grid h-10 w-10 place-items-center rounded-xl border border-slate-200/80 bg-white/85 text-slate-900 shadow-sm backdrop-blur-sm hover:border-slate-400 hover:bg-white"
-                >
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.65"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-6 w-6"
-                  >
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V20.3h-3v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7.08 15a1.7 1.7 0 0 0-1.55-1H5.4v-3h.13a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06L8.8 5.94l.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1-1.55V4.7h3v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.55 1h.13v3h-.13a1.7 1.7 0 0 0-1.55 1Z" />
-                  </svg>
-                </button>
-              </div>
-            </header>
-            <div className="dashboard-hero">
-              <div className="hero-copy relative z-10">
-                <p className="hero-eyebrow">Your personal study space</p>
-                <h1 className="hero-title">
-                  <span className="hero-title__line">Make your notes</span>
-                  <span className="hero-title__line">
-                    <img
-                      src="/learnloop-logo.png"
-                      alt=""
-                      aria-hidden="true"
-                      className="hero-title__mark"
-                    />
-                    work harder.
-                  </span>
-                </h1>
-                <p className="hero-lede">
-                  Keep the useful details. Build a summary, test your memory, and ask questions from
-                  your own notes.
-                </p>
-                <div className="hero-actions">
-                  <a className="hero-action hero-action--primary" href="#add-material">
-                    Add study material
-                  </a>
-                  <a className="hero-action hero-action--secondary" href="#materials">
-                    Open your library
-                  </a>
-                </div>
-              </div>
-              <div className="hero-art" aria-hidden="true">
-                <div className="hero-art__back-sheet" />
-                <div className="hero-art__page">
-                  <p>FIELD NOTES</p>
-                  <strong>
-                    Read it.
-                    <br />
-                    Recall it.
-                  </strong>
-                  <span />
-                  <span />
-                  <span />
-                  <i />
-                </div>
-                <div className="hero-art__margin-note">LearnLoop / your space</div>
-              </div>
-            </div>
+        <header className="app-header">
+          <a className="dashboard-brand" href="/" aria-label="LearnLoop home">
+            <img src="/learnloop-logo.png" alt="" aria-hidden="true" />
+            <span>LearnLoop</span>
+          </a>
+          <nav className="study-nav" aria-label="Study navigation">
+            <a href="#materials">Library</a>
+            <a href="#practice-history">Practice</a>
+          </nav>
+          <div className="app-header__actions">
+            <button
+              type="button"
+              aria-label="Search your library"
+              aria-expanded={searchOpen}
+              onClick={() => setSearchOpen(true)}
+              className="app-icon-button"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-5 w-5"
+              >
+                <circle cx="11" cy="11" r="6" />
+                <path d="m16 16 4 4" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              aria-label="Open settings"
+              aria-expanded={settingsOpen}
+              onClick={() => setSettingsOpen(true)}
+              className="app-icon-button"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.65"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-5 w-5"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V20.3h-3v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7.08 15a1.7 1.7 0 0 0-1.55-1H5.4v-3h.13a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06L8.8 5.94l.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1-1.55V4.7h3v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.55 1h.13v3h-.13a1.7 1.7 0 0 0-1.55 1Z" />
+              </svg>
+            </button>
           </div>
+        </header>
+        <section className="workspace-heading" aria-labelledby="workspace-title">
+          <div>
+            <h1 id="workspace-title">Your study library</h1>
+            <p>
+              {materials.length} {materials.length === 1 ? "material" : "materials"} across {subjects.length}{" "}
+              {subjects.length === 1 ? "subject" : "subjects"}.
+            </p>
+          </div>
+          <a className="workspace-add" href="#add-material">
+            Add material
+          </a>
         </section>
-        <div className="study-ticker" aria-hidden="true">
-          <div className="study-ticker__track">
-            {[0, 1].map((copy) => (
-              <span className="study-ticker__group" key={copy}>
-                <span>Keep your own notes</span>
-                <span>Build clear summaries</span>
-                <span>Practice with purpose</span>
-              </span>
-            ))}
-          </div>
-        </div>
         {searchOpen && (
           <div
             role="presentation"
@@ -1812,47 +1634,27 @@ export function App() {
             </button>
           </p>
         )}
-        <div className="study-layout mt-7 grid grid-flow-dense grid-cols-1 gap-7 lg:grid-cols-12 lg:gap-8">
+        <div className="study-layout mt-7 grid grid-cols-1 gap-7 lg:grid-cols-12 lg:gap-8">
           <div className="study-shelf lg:col-span-5">
-            <section className="library-card relative overflow-hidden rounded-3xl p-5 text-white sm:p-6">
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-2 rounded-[1.25rem] border border-white/10"
-              />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -bottom-20 -left-16 h-44 w-44 rounded-full border border-white/15"
-              />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -bottom-10 -left-6 h-28 w-28 rounded-full border border-white/10"
-              />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute right-4 top-4 h-16 w-16 rotate-12 rounded-2xl border border-white/15 sm:right-8"
-              />
-              <p className="relative text-sm text-slate-100">Your study library</p>
-              <p className="relative mt-1 text-3xl font-bold">{subjects.length} subjects</p>
-              <p className="relative mt-1 text-slate-100">{materials.length} saved materials</p>
+            <section className="library-summary" aria-label="Study library summary">
+              <div className="library-summary__counts">
+                <p>
+                  <strong>{subjects.length}</strong>
+                  <span>{subjects.length === 1 ? "subject" : "subjects"}</span>
+                </p>
+                <p>
+                  <strong>{materials.length}</strong>
+                  <span>{materials.length === 1 ? "material" : "materials"}</span>
+                </p>
+              </div>
               {dailyUsage && (
-                <div className="relative mt-4">
-                  <div className="flex items-center justify-between gap-3 text-sm text-slate-100">
-                    <span>Daily usage</span>
-                    <span className="font-semibold text-white">{dailyUsagePercent}%</span>
-                  </div>
-                  <div
-                    className="daily-usage-track mt-2 h-2 overflow-hidden rounded-full border border-white/15"
-                    aria-label={`Daily AI usage: ${dailyUsagePercent}%`}
-                  >
-                    <div
-                      className="daily-usage-progress h-full rounded-full transition-all"
-                      style={{
-                        width: `${dailyUsagePercent}%`
-                      }}
-                    />
-                  </div>
+                <div className="library-summary__usage">
+                  <span>AI requests today</span>
+                  <strong>
+                    {dailyUsage.used} of {dailyUsage.limit}
+                  </strong>
                   {dailyUsageResetCountdown && (
-                    <p className="mt-2 text-xs font-medium text-slate-100">
+                    <p>
                       Daily limit reached. Resets in {dailyUsageResetCountdown} (12:00 AM UTC).
                     </p>
                   )}
@@ -1886,7 +1688,7 @@ export function App() {
                 {subjects.map((subject) => (
                   <div
                     key={subject._id}
-                    className={`subject-accordion__item relative rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 ${selectedSubject === subject._id ? "is-selected ring-2 ring-brand" : ""}`}
+                    className={`subject-accordion__item relative ${selectedSubject === subject._id ? "is-selected" : ""}`}
                   >
                     <button
                       type="button"
@@ -1894,9 +1696,6 @@ export function App() {
                       onClick={() => setSelectedSubject(subject._id)}
                       className="subject-accordion__select w-full rounded-2xl p-4 pr-12 text-left"
                     >
-                      <span className="subject-accordion__initial" aria-hidden="true">
-                        {subject.name.slice(0, 1).toUpperCase()}
-                      </span>
                       <span className="block truncate font-semibold">{subject.name}</span>
                     </button>
                     <div data-action-menu className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -1961,7 +1760,7 @@ export function App() {
           </div>
           <section
             id="add-material"
-            className="material-composer rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6 lg:col-span-7"
+            className="material-composer p-5 sm:p-6 lg:col-span-7"
           >
             <h2 className="text-xl font-semibold">Add study material</h2>
             <p className="mt-1 text-sm text-slate-500">
@@ -2085,7 +1884,7 @@ export function App() {
             {visibleMaterials.map((material) => (
               <article
                 key={material._id}
-                className="material-card min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+                className="material-card min-w-0"
               >
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                   <div className="min-w-0 overflow-hidden">
@@ -2648,7 +2447,7 @@ export function App() {
               history.map((item) => (
                 <article
                   key={item.id}
-                  className="history-card rounded-2xl bg-white p-4 ring-1 ring-slate-200"
+                  className="history-card"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -2714,12 +2513,11 @@ export function App() {
           </div>
         </section>
         <footer className="mt-12 border-t border-slate-200 py-7 text-center text-sm text-slate-500">
-          <p>LearnLoop helps you learn from your own notes.</p>
           <a
             href="mailto:janninobansag@gmail.com"
-            className="mt-2 inline-block font-semibold text-brand"
+            className="inline-block font-semibold text-brand"
           >
-            Contact: janninobansag@gmail.com
+            Contact LearnLoop
           </a>
         </footer>
       </main>
